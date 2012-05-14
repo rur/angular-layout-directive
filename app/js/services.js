@@ -2,8 +2,21 @@
 
 /* Services */
 
-
-// Demonstrate how to register services
-// In this case it is a simple value service.
 angular.module('myApp.services', []).
-  value('version', '0.1');
+	factory('augmentController', [ '$injector', '$parse', '$window', function ($injector, $parse, $window) {
+		return function augmentController (Class, controller, locals) {
+			var scope = locals ? locals.$scope : {};
+
+			if (angular.isString(Class)) {
+			  var getter = $parse(Class);
+			  Class = getter(scope) || getter($window);
+			}
+
+			var classPrototype = Class.prototype;
+		    for(var key in classPrototype) {
+		        controller[key] = angular.bind(controller, classPrototype[key]);
+		    }
+
+		    return $injector.invoke(Class, controller, locals);
+		}
+	}])
