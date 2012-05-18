@@ -77,6 +77,13 @@ describe('service', function() {
       expect(scope.$watch).toHaveBeenCalled();
     });
     
+    it("should not call $watch twice on the same property", function() {
+      spyOn(scope, "$watch");
+      localTrans.bind("property", "trans-property");
+      localTrans.bind("property", "different-trans-property");
+      expect(scope.$watch.callCount).toEqual(1);
+    });
+    
     it("should apply a hash of changes to a scope", function() {
       localTrans.apply({x:123,y:"100%"});
       expect(scope.x).toEqual(123);
@@ -140,6 +147,20 @@ describe('service', function() {
         scope.$digest();
         expect(aniPropSpy.callCount).toEqual(2);
         expect(fireSpy.callCount).toEqual(1);
+      });
+      
+      it("should apply a parameters hash to the fire function", function() {
+        localTrans.state.config("test2", {prop:123}, {a: "value2"});
+        scope.$digest();
+        localTrans.apply({prop: 654},{a: "value1"});
+        scope.$digest();
+        scope.prop = 12345;
+        scope.$digest();
+        localTrans.state("test2");
+        scope.$digest();
+        expect(fireSpy.callCount).toEqual(4);
+        expect(fireSpy).toHaveBeenCalledWith({a: "value1"});
+        expect(fireSpy).toHaveBeenCalledWith({a: "value2"});
       });
     });
   });
