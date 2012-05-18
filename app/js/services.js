@@ -111,6 +111,13 @@ angular.module('myApp.services', [])
         }
         
         this.bind = function  (scopeProp, transProp) {
+          if(arguments.length == 1){
+            var bindingsHash = arguments[0];
+            for(var prop in bindingsHash){
+              trans.bind(prop, bindingsHash[prop]);
+            }
+            return;
+          }
           if(!bindings.hasOwnProperty(scopeProp)){
             scope.$watch(scopeProp,function (newval, oldval) {
               (getTransitionPropertyFunction(scopeProp))(newval, oldval);

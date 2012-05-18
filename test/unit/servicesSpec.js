@@ -77,6 +77,15 @@ describe('service', function() {
       expect(scope.$watch).toHaveBeenCalled();
     });
     
+    it("should handle it if bind recieves a hash", function() {
+      spyOn(scope, "$watch").andCallFake(function(prop,func){
+        expect(prop).toEqual("property");
+        expect(angular.isFunction(func)).toBeTruthy();
+      });
+      localTrans.bind({"property":"trans-property"})
+      expect(scope.$watch).toHaveBeenCalled();
+    });
+    
     it("should not call $watch twice on the same property", function() {
       spyOn(scope, "$watch");
       localTrans.bind("property", "trans-property");
