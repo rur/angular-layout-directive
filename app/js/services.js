@@ -27,18 +27,55 @@ angular.module('myApp.services', [])
    * Transition service
    */
   .provider("transition", function TransitionProvider () {
+    var defaultSuites = [];
+    this.addSuiteClass = function (suiteClass) {
+      defaultSuites.push(suiteClass);
+    }
+    
+    function DefaultTransitionSuite () {
+      var props = {};
+      this.register("x", function (newval, oldval) {
+        props["left"] = newval;
+      })
+      
+      this.register("y", function (newval, oldval) {
+        props["top"] = newval;
+      })
+      
+      this.register("width", function (newval, oldval) {
+        props["width"] = newval;
+      })
+            
+      this.register("height", function (newval, oldval) {
+        props["height"] = newval;
+      })
+      
+      this.fire = function(element, config){
+        element.css(props);
+        props = {};
+      }
+    }
+    
+    this.addSuiteClass(DefaultTransitionSuite);
+    
     this.$get = [ "$exceptionHandler", function transitionFactory ($exceptionHandler) {
       /*
           TransitionService class
       */
       function TransitionService (scope, element) {
-        return new Transition( scope );
-      }      
+        var transition = new Transition( scope, element );
+        for (var i=0; i < defaultSuites.length; i++) {
+          var suite = defaultSuites[i];
+          transition.addSuite(suite);
+        };
+        return transition;
+      }
+            
       return TransitionService;
       /*
           Transition class
       */
-      function Transition ( scope ) {
+      function Transition ( scope, element ) {
         var trans = this,
             bindings = {},
             suites = [],
@@ -107,7 +144,7 @@ angular.module('myApp.services', [])
           for (var i=0; i < suites.length; i++) {
             suite = suites[i]
             if(suite.onCue){
-              suite.fire( fireParams );
+              suite.fire( element, fireParams );
               suite.onCue = false;
             }
           };

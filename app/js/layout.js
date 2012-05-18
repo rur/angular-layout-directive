@@ -1,6 +1,5 @@
 'use strict';
 
-
 // 
 // function LayoutCtrlFactory () {
 //   function LayoutCtrl ($scope, $element, $attr) { // extends TransitionDirectiveCtrl

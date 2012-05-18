@@ -57,7 +57,7 @@ describe('service', function() {
         transition = $injector.get('transition');
         scope = $injector.get("$rootScope");
       });
-      element = angular.element("<div></div>");
+      element = jasmine.createSpyObj("element", ["css"]);
       localTrans = transition(scope, element);
     });
     
@@ -149,7 +149,7 @@ describe('service', function() {
         expect(fireSpy.callCount).toEqual(1);
       });
       
-      it("should apply a parameters hash to the fire function", function() {
+      it("should apply element and parameters hash to the fire function", function() {
         localTrans.state.config("test2", {prop:123}, {a: "value2"});
         scope.$digest();
         localTrans.apply({prop: 654},{a: "value1"});
@@ -159,8 +159,17 @@ describe('service', function() {
         localTrans.state("test2");
         scope.$digest();
         expect(fireSpy.callCount).toEqual(4);
-        expect(fireSpy).toHaveBeenCalledWith({a: "value1"});
-        expect(fireSpy).toHaveBeenCalledWith({a: "value2"});
+        expect(fireSpy).toHaveBeenCalledWith(element, {a: "value1"});
+        expect(fireSpy).toHaveBeenCalledWith(element, {a: "value2"});
+      });
+      it("should have a default transition suite applied", function() {
+        localTrans.bind("x","x");
+        localTrans.bind("y","y");
+        localTrans.bind("width","width");
+        localTrans.bind("height","height");
+        localTrans.apply({x: 1, y: 2, width: "100%", height: 200});
+        scope.$digest();
+        expect(element.css).toHaveBeenCalledWith({left: 1, top: 2, width: "100%", height: 200});
       });
     });
   });
