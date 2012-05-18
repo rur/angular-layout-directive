@@ -1,27 +1,6 @@
 'use strict';
 
-/*/
-  Base controller class to add transition binding 
-  to a layout directive controller
-//*/
-function TransitionDirectiveCtrl ($scope, $element, transition) {
-  $scope.transitions = {};
-  // method to bind a scope property to a transition definition key
-  this.bindTransitions = function (hash){
-   for(var key in hash){
-     if(!$scope.transitions.hasOwnProperty(key)){
-       $scope.$watch(key,(function(prop){
-         return function( newVal, oldVal){
-           var trans = transition( $scope.transitions[prop] );
-           trans($element, newVal, oldVal);
-         }
-       })(key));
-     }
-     $scope.transitions[key] = hash[key];
-   }
-  }
-}
-TransitionDirectiveCtrl.$inject = ["$scope", "$element", "transition"]
+
 // 
 // function LayoutCtrlFactory () {
 //   function LayoutCtrl ($scope, $element, $attr) { // extends TransitionDirectiveCtrl
