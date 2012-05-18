@@ -75,7 +75,9 @@ angular.module('myApp.services', [])
         
         this.addSuite = function(Klass){
           var suite = new (extendClass(TransitionSuiteBase, Klass))();
-          if(!angular.isFunction(suite.fire)) 
+          if(!angular.isFunction(suite.fire)){ 
+            $exceptionHandler("Transition suite ["+Klass.name+"] class must have a 'fire' instance method.");
+          }
           suites.push(suite);
         }
         

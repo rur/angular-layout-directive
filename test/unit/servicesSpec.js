@@ -90,20 +90,6 @@ describe('service', function() {
       expect(scope.y).toEqual("100%");
     });
     
-    it("should add a transition suite which is invoked to extend a base class", function() {
-      var constWasCalled = false;
-      function TestSuite () {
-        expect(this.register).toBeDefined();
-        expect(angular.isFunction(this.register)).toBeTruthy();
-        expect(this.testVal).toEqual("testValue");
-        expect(this.props).toEqual({});
-        constWasCalled = true;
-      }
-      TestSuite.prototype.testVal = "testValue";
-      localTrans.addSuite( TestSuite );
-      expect(constWasCalled).toBeTruthy();
-    });
-    
     describe("TransitionSuite", function() {
       var aniPropSpy,
           fireSpy;
@@ -117,6 +103,21 @@ describe('service', function() {
         }
         localTrans.addSuite(TestSuite);
         localTrans.bind("prop", "test");
+      });
+      
+      it("should add a transition suite which is invoked to extend a base class", function() {
+        var constWasCalled = false;
+        function TestRunSuite () {
+          expect(this.register).toBeDefined();
+          expect(angular.isFunction(this.register)).toBeTruthy();
+          expect(this.testVal).toEqual("testValue");
+          expect(this.props).toEqual({});
+          constWasCalled = true;
+          this.fire = function(){};
+        }
+        TestRunSuite.prototype.testVal = "testValue";
+        localTrans.addSuite( TestRunSuite );
+        expect(constWasCalled).toBeTruthy();
       });
       
       it("should call the bound transition property functions", function() {
