@@ -77,13 +77,21 @@ describe('service', function() {
       expect(scope.$watch).toHaveBeenCalled();
     });
     
-    it("should handle it if bind recieves a hash", function() {
+    it("should handle it if bind receives a hash", function() {
       spyOn(scope, "$watch").andCallFake(function(prop,func){
         expect(prop).toEqual("property");
         expect(angular.isFunction(func)).toBeTruthy();
       });
       localTrans.bind({"property":"trans-property"})
       expect(scope.$watch).toHaveBeenCalled();
+    });
+    
+    it("should raise an exception if it receives invalid bind params", function() {
+      expect(function(){localTrans.bind(123);}).toThrow("Cannot bind scope property '123'");
+      expect(function(){localTrans.bind("123",123);}).toThrow("Cannot bind transition property '123'");
+      expect(function(){localTrans.bind("");}).toThrow("Cannot bind scope property ''");
+      expect(function(){localTrans.bind("123","");}).toThrow("Cannot bind transition property ''");
+      expect(function(){localTrans.bind({"123":{}});}).toThrow("Cannot bind transition property '[object Object]'");
     });
     
     it("should not call $watch twice on the same property", function() {
@@ -104,6 +112,15 @@ describe('service', function() {
       localTrans.state("state1");
       expect(scope.x).toEqual(123);
       expect(scope.y).toEqual("100%");
+    });
+    
+    it("should call unwatch functions when the scope dispatches $destroy", function() {
+      var unwatcherSpy = jasmine.createSpy("unwatch function");
+      spyOn(scope, "$watch").andReturn(unwatcherSpy);
+      localTrans.bind("x","x");
+      scope.$digest();
+      scope.$emit("$destroy");
+      expect(unwatcherSpy).toHaveBeenCalled();
     });
     
     describe("TransitionSuite", function() {
@@ -146,16 +163,23 @@ describe('service', function() {
         expect(aniPropSpy).toHaveBeenCalledWith(2,1);
       });
 
-      it("should fire the animation once after all scope changes have been made", function() {
-        scope.$watch("prop", function(newval,oldval){
-          if(newval > 3){ 
-            scope.prop = 3;
-          }
-        })
+      it("should fire the animation only in digests where something has changed", function() {
+        scope.$digest();
         scope.prop = 10;
         scope.$digest();
-        expect(aniPropSpy.callCount).toEqual(2);
-        expect(fireSpy.callCount).toEqual(1);
+        scope.prop = 3;
+        scope.$digest();
+        scope.$digest();
+        scope.$digest();
+        expect(aniPropSpy.callCount).toEqual(3);
+        expect(fireSpy.callCount).toEqual(3);
+      });
+      
+      it("should trim binding string values", function() {
+        localTrans.bind(" test2 ", " test ");
+        scope.test2 = "testValue";
+        scope.$digest();
+        expect(aniPropSpy).toHaveBeenCalledWith("testValue", "testValue");
       });
       
       it("should apply element and parameters hash to the fire function", function() {
@@ -171,6 +195,7 @@ describe('service', function() {
         expect(fireSpy).toHaveBeenCalledWith(element, {a: "value1"});
         expect(fireSpy).toHaveBeenCalledWith(element, {a: "value2"});
       });
+      
       it("should have a default transition suite applied", function() {
         localTrans.bind("x","x");
         localTrans.bind("y","y");
@@ -178,7 +203,7 @@ describe('service', function() {
         localTrans.bind("height","height");
         localTrans.apply({x: 1, y: 2, width: "100%", height: 200});
         scope.$digest();
-        expect(element.css).toHaveBeenCalledWith({left: 1, top: 2, width: "100%", height: 200});
+        expect(element.css).toHaveBeenCalledWith({left: "1px", top: "2px", width: "100%", height: "200px"});
       });
     });
   });

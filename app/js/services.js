@@ -35,18 +35,22 @@ angular.module('myApp.services', [])
     function DefaultTransitionSuite () {
       var props = {};
       this.register("x", function (newval, oldval) {
+        newval = !isNaN(newval) ? newval.toString() + "px" : newval;
         props["left"] = newval;
       })
       
       this.register("y", function (newval, oldval) {
+        newval = !isNaN(newval) ? newval.toString() + "px" : newval;
         props["top"] = newval;
       })
       
       this.register("width", function (newval, oldval) {
+        newval = !isNaN(newval) ? newval.toString() + "px" : newval;
         props["width"] = newval;
       })
             
       this.register("height", function (newval, oldval) {
+        newval = !isNaN(newval) ? newval.toString() + "px" : newval;
         props["height"] = newval;
       })
       
@@ -70,8 +74,8 @@ angular.module('myApp.services', [])
         };
         return transition;
       }
-            
       return TransitionService;
+      
       /*
           Transition class
       */
@@ -80,20 +84,21 @@ angular.module('myApp.services', [])
             bindings = {},
             suites = [],
             doFire = false,
-            fireParams;
+            fireParams,
+            un$watchers = [];
         
         //////////////////////////
         // Initialisation
         //////////////////////////
-        scope.$watch(function () {
+        un$watchers.push(scope.$watch(function () {
           if(doFire){
-            scope.$evalAsync(fire);
+            fire();
             doFire = false;
           }
-        });
+        }));
         
         scope.$on("$destroy",function(){
-          // TODO: implement tear-down
+          trans.dispose();
         });
         
         //////////////////////////
@@ -110,19 +115,31 @@ angular.module('myApp.services', [])
           trans.states[id] = {props:hash, params:(params||{})};
         }
         
+        this.dispose = function (){
+          angular.forEach(un$watchers, function(un$watch){
+            un$watch();
+          });
+          fireParams = null;
+          scope = null;
+          element = null;
+        }
+        
         this.bind = function  (scopeProp, transProp) {
-          if(arguments.length == 1){
+          if(angular.isObject(arguments[0])){ 
             var bindingsHash = arguments[0];
             for(var prop in bindingsHash){
               trans.bind(prop, bindingsHash[prop]);
             }
             return;
           }
+          
+          scopeProp = validateAndTrimProperty(scopeProp, "scope");
+          transProp = validateAndTrimProperty(transProp, "transition");
           if(!bindings.hasOwnProperty(scopeProp)){
-            scope.$watch(scopeProp,function (newval, oldval) {
+            un$watchers.push( scope.$watch(scopeProp,function (newval, oldval) {
               (getTransitionPropertyFunction(scopeProp))(newval, oldval);
               doFire = true;
-            });
+            }));
           }
           bindings[scopeProp] = transProp;
         }
@@ -189,6 +206,16 @@ angular.module('myApp.services', [])
           return Extended;
         }
         
+        function trim(stringToTrim) {
+        	return stringToTrim.replace(/^\s+|\s+$/g,"");
+        }
+        
+        function validateAndTrimProperty (property, type) {
+          if(!(angular.isString(property) && (property = trim(property)).length > 0 )){ 
+            $exceptionHandler("Cannot bind "+type+" property '"+property+"'");
+          }
+          return property;
+        }
         //////////////////////////
         // Private Classes
         //////////////////////////
