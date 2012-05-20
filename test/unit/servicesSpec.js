@@ -144,7 +144,7 @@ describe('service', function() {
           expect(this.register).toBeDefined();
           expect(angular.isFunction(this.register)).toBeTruthy();
           expect(this.testVal).toEqual("testValue");
-          expect(this.props).toEqual({});
+          expect(this.transitionProps).toEqual({});
           constWasCalled = true;
           this.fire = function(){};
         }
@@ -201,9 +201,37 @@ describe('service', function() {
         localTrans.bind("y","y");
         localTrans.bind("width","width");
         localTrans.bind("height","height");
-        localTrans.apply({x: 1, y: 2, width: "100%", height: 200});
+        localTrans.bind("opacity","opacity");
+        localTrans.apply({x: 1, y: 2, width: "100%", height: 200, opacity: 0.5});
         scope.$digest();
-        expect(element.css).toHaveBeenCalledWith({left: "1px", top: "2px", width: "100%", height: "200px"});
+        expect(element.css).toHaveBeenCalledWith({left: "1px", 
+                                                  top: "2px", 
+                                                  width: "100%", 
+                                                  height: "200px",
+                                                  opacity: 0.5, 
+                                                  "-moz-opacity": 0.5, 
+                                                  filter: "alpha(opacity=50)"});
+      });
+      
+      it("should apply transition properties in a last defined first preference order", function() {
+        var aniPropSpy2 = jasmine.createSpy("Animation Property Spy 2");
+        function TestSuite2 () {
+          this.register("test", aniPropSpy2);
+          this.fire = function(){};
+        }
+        localTrans.addSuite(TestSuite2);
+        scope.prop = 123;
+        scope.$digest();
+        expect(aniPropSpy).not.toHaveBeenCalled();
+        expect(aniPropSpy2).toHaveBeenCalled();
+      });
+      
+      it("should raise an error when you try to register a reserved transition property", function() {
+        function TestSuite2 () {
+          this.register("noop", angular.noop);
+          this.fire = function(){};
+        }
+        expect(function(){localTrans.addSuite(TestSuite2);}).toThrow("Cannot register transition property 'noop' it is reserved.");
       });
     });
   });
