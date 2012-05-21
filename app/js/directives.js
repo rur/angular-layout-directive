@@ -65,8 +65,6 @@ angular.module('myApp.directives', [])
       return {
         require: ["?aLayout", "?aBlock", "?aScreen"],
         link:function (scope, element, attrs, controllers) {
-          console.dir(controllers)
-          
           var props = (attrs["beSlidey"]).split(","),
               controllers = controllers || [],
               bindings = {
