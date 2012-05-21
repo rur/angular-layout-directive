@@ -1,6 +1,6 @@
 'use strict';
 
-/* jasmine specs for services go here */
+/* jasmine specs for services */
 
 describe('service', function() {
   beforeEach(function() {
@@ -211,6 +211,17 @@ describe('service', function() {
                                                   opacity: 0.5, 
                                                   "-moz-opacity": 0.5, 
                                                   filter: "alpha(opacity=50)"});
+      });
+      
+      it("should hide an element using the hidden transition binding", function() {
+        element.css.andReturn("inline");
+        localTrans.bind("hidden", "hidden");
+        scope.hidden = true;
+        scope.$digest();
+        scope.hidden = false;
+        scope.$digest();
+        expect(element.css).toHaveBeenCalledWith({display: "none"});
+        expect(element.css).toHaveBeenCalledWith({display: "inline"});
       });
       
       it("should apply transition properties in a last defined first preference order", function() {

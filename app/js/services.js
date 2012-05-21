@@ -52,16 +52,25 @@ angular.module('myApp.services', [])
      * This is the default transition suite definition which applies basic positioning and resizing 
      * to an element based upon the following mapping to css properties:
      * 
-     * "x" -> "left"
-     * "y" -> "top"
-     * "width" -> "width"
-     * "height" -> "height"
-     * "opacity" -> "opacity", "-moz-opacity", "filter:alpha(opacity=x)"
+     * "x"{Number|String} -> "left"
+     * "y"{Number|String} -> "top"
+     * "width"{Number|String} -> "width"
+     * "height"{Number|String} -> "height"
+     * "opacity"{decimal Number} -> "opacity", "-moz-opacity", "filter:alpha(opacity={value*100}))"
+     * "hidden"{Boolean} -> "display"
+     * 
+     * x, y, width and height will apply string values directly to css. 
+     * If a number is recieved it casts a String with 'px' appended.
+     * 
+     * 'hidden' works in a similar way to jQuery show/hide
      * 
      * @constructor
      */
     function DefaultTransitionSuite () {
-      var props = {};
+      var props = {},
+          display,
+          defaultDisplay;
+      
       this.register("x", function (newval, oldval) {
         newval = !isNaN(newval) ? newval.toString() + "px" : newval;
         props["left"] = newval;
@@ -81,18 +90,32 @@ angular.module('myApp.services', [])
         newval = !isNaN(newval) ? newval.toString() + "px" : newval;
         props["height"] = newval;
       })
-                  
+      
+      this.register("hidden", function (newval, oldval) {
+        display = newval ? "hide" : "show";
+      })
+      
       this.register("opacity", function (newval, oldval) {
-        var ieval;
+        var ieVal;
         if(isNaN(newval)) return;
         props["opacity"] = newval;
         props["-moz-opacity"] = newval;
-        ieval = Math.round(newval*100);
-        props["filter"] = "alpha(opacity="+ieval+")";
+        ieVal = Math.round(newval*100);
+        props["filter"] = "alpha(opacity="+ieVal+")";
       });
       
       this.fire = function(element, config){
+        if(!defaultDisplay && element.css("display") != "none") defaultDisplay = element.css("display");
+        switch(display){
+          case "show":
+            props["display"] = defaultDisplay ? defaultDisplay : "block";
+            break;
+          case "hide":
+            props["display"] = "none";
+            break;
+        }
         element.css(props);
+        display = null;
         props = {};
       }
     }
@@ -103,16 +126,17 @@ angular.module('myApp.services', [])
       /**
        * TransitionService 
        * Creates a new Transition instance which allows the provided scopes properties to be 
-       * bound to transition porperties which are defined in transition suites.
+       * bound to properties which are defined in transition suites.
        * 
        * The returned object can be used to configure and trigger complex transitions while 
-       * delegating the implementation on the element to the defined suites.
+       * delegating the implementation on the element to Transition Suites. See Transition#addSuite
        *
        * @param {angular.module.ng.$rootScope.Scope} scope The scope to bind transiton properties to
        * @param {angular.element} element A jqLite/jQuery element to apply transions to
        * @returns {Transition} Newly created transition object
        */
-      function TransitionService (scope, element) {
+       // TODO: This could be used to provide centralised control of transitions, figure out how/if this would be useful.
+      function transitionService (scope, element) {
         var transition = new Transition( scope, element );
         for (var i=0; i < defaultSuites.length; i++) {
           var suite = defaultSuites[i];
@@ -120,7 +144,7 @@ angular.module('myApp.services', [])
         };
         return transition;
       }
-      return TransitionService;
+      return transitionService;
       
       /**
        * Transition 
@@ -158,7 +182,7 @@ angular.module('myApp.services', [])
         /**
          * Hash map with the configued transition states.
          * 
-         * Use Transition#state.config function to configure states.
+         * Use Transition#state.config function to add and configure states.
          */
         this.states = {};
         
@@ -175,7 +199,7 @@ angular.module('myApp.services', [])
         /**
          * Configure a transition state
          * 
-         * example: 
+         * example psudo: 
          *    tarnsition.state.configure("init", {x: 100, y: 200, width: "100%", height: "200px"}, {onComplete:func..});
          * 
          * @param {string} id The id of the new/existing state you want to configure
@@ -215,7 +239,7 @@ angular.module('myApp.services', [])
               transProp,
               bindingsHash,
               prop;
-          // handle a hash calling bind using the key-value pairs
+          // handle a hash, call bind using the key-value pairs
           if(angular.isObject(property)){ 
             bindingsHash = property;
             for(prop in bindingsHash){
@@ -223,7 +247,7 @@ angular.module('myApp.services', [])
             }
             return;
           }
-          // setup binding, creating a scope watcher if required
+          // validate, create a scope watcher if required, then register binding
           scopeProp = validateAndTrimProperty(property, "scope");
           transProp = validateAndTrimProperty(transProp, "transition");
           if(!bindings.hasOwnProperty(scopeProp)){
@@ -235,6 +259,16 @@ angular.module('myApp.services', [])
           bindings[scopeProp] = transProp;
         }
         
+        /**
+         * Apply a set of properties and values to the scope. Any transition bindings will be triggered as a result.
+         * 
+         * The main difference between this and just applying values to the scope directly is that
+         * you can pass a configuration hash which will be available to all transition fire methods that
+         * get triggered in this scope.$digest cycle. This is what Transition#state uses to apply the state to the scope
+         * 
+         * @param {Object} props A hash of properties and their values that will be applied to the scope using scope[key] = value
+         * @param {Object} params A configuration hash which will be passed to all TransitionSuite#fire methods that get triggered
+         */
         this.apply = function(props, params){
           var prop;
           for(prop in props){
@@ -243,10 +277,45 @@ angular.module('myApp.services', [])
           fireParams = params || {};
         }
         
-        this.addSuite = function(Klass){
-          var suite = new (extendClass(TransitionSuiteBase, Klass))();
+        /**
+         * Invokes a transition suite constructor extending the TransitionSuiteBase class
+         * 
+         * The application of transtions onto the actual element are delegated to Transtion Suites.
+         * The constructor allows you to add transtion properties each matched to a listener function. 
+         * These listener functions prep the suite before the transition is fired at the end of the digest cycle.
+         * 
+         * To create your own TransitionSuite you must register transitions in your constructor and implement a 'this.fire' method.
+         * 
+         * Example:
+         *    function OpacityTransitionSuite () {
+         *      var value;
+         *      this.register("opacity", function(newvalue,oldvalue){
+         *        // some validation here
+         *        value = newval;
+         *      });
+         *      
+         *      this.fire = function(element, config){
+         *        element.css("opacity", value);
+         *        value = null;
+         *      }
+         *    }
+         *    ...
+         *    transition.addSuite(OpacityTransitionSuite);
+         *    transition.bind("myOpacity", "opacity");
+         *    ...
+         *    $scope.myOpacity = .5; // will apply css 'opacity: .5' to element
+         * 
+         * Only transtion suite instances that have received changes will have their 'fire' method called.
+         * 
+         * You can add any of your transition suites as application defaults, applied to all transition instances
+         * using the TransitionProvider#addSuiteClass method
+         * 
+         * @param {function} constructor A transition suite constructor implementing a fire method and registering transition listeners
+         */
+        this.addSuite = function(constructor){
+          var suite = new (extendClass(TransitionSuiteBase, constructor))();
           if(!angular.isFunction(suite.fire)){ 
-            $exceptionHandler("Transition suite ["+Klass.name+"] class must have a 'fire' instance method.");
+            $exceptionHandler("Transition suite ["+constructor.name+"] Class must have a 'fire' instance method.");
           }
           suites.unshift(suite);
         }
@@ -271,7 +340,7 @@ angular.module('myApp.services', [])
               transFn,
               property = bindings[scopeProperty];
           if(!property) {
-            $exceptionHandler( "Transition Service::Internal Error: "+
+            $exceptionHandler( "Transition Service "+
                                "No transition binding found for "+
                                scopeProperty+" but one was expected");
           }
@@ -287,6 +356,7 @@ angular.module('myApp.services', [])
         
         // used when extending TransitionSuiteBase
         function extendClass(base, child){
+          // notice this method doesn't bother with constructor arguments
           function Extended(){
             base.apply(this);
             child.apply(this);
