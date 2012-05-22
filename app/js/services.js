@@ -52,12 +52,12 @@ angular.module('myApp.services', [])
      * This is the default transition suite definition which applies basic positioning and resizing 
      * to an element based upon the following mapping to css properties:
      * 
-     * "x"{Number|String} -> "left"
-     * "y"{Number|String} -> "top"
-     * "width"{Number|String} -> "width"
-     * "height"{Number|String} -> "height"
-     * "opacity"{decimal Number} -> "opacity", "-moz-opacity", "filter:alpha(opacity={value*100}))"
-     * "hidden"{Boolean} -> "display"
+     * "css-x"{Number|String} -> "left"
+     * "css-y"{Number|String} -> "top"
+     * "css-width"{Number|String} -> "width"
+     * "css-height"{Number|String} -> "height"
+     * "css-opacity"{decimal Number} -> "opacity", "-moz-opacity", "filter:alpha(opacity={value*100}))"
+     * "css-hidden"{Boolean} -> "display"
      * 
      * x, y, width and height will apply string values directly to css. 
      * If a number is recieved it casts a String with 'px' appended.
@@ -71,31 +71,31 @@ angular.module('myApp.services', [])
           display,
           defaultDisplay;
       
-      this.register("x", function (newval, oldval) {
+      this.register("css-x", function (newval, oldval) {
         newval = !isNaN(newval) ? newval.toString() + "px" : newval;
         props["left"] = newval;
       })
       
-      this.register("y", function (newval, oldval) {
+      this.register("css-y", function (newval, oldval) {
         newval = !isNaN(newval) ? newval.toString() + "px" : newval;
         props["top"] = newval;
       })
       
-      this.register("width", function (newval, oldval) {
+      this.register("css-width", function (newval, oldval) {
         newval = !isNaN(newval) ? newval.toString() + "px" : newval;
         props["width"] = newval;
       })
             
-      this.register("height", function (newval, oldval) {
+      this.register("css-height", function (newval, oldval) {
         newval = !isNaN(newval) ? newval.toString() + "px" : newval;
         props["height"] = newval;
       })
       
-      this.register("hidden", function (newval, oldval) {
+      this.register("css-hidden", function (newval, oldval) {
         display = newval ? "hide" : "show";
       })
       
-      this.register("opacity", function (newval, oldval) {
+      this.register("css-opacity", function (newval, oldval) {
         var ieVal;
         if(isNaN(newval)) return;
         props["opacity"] = newval;

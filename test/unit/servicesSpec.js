@@ -197,11 +197,11 @@ describe('service', function() {
       });
       
       it("should have a default transition suite applied", function() {
-        localTrans.bind("x","x");
-        localTrans.bind("y","y");
-        localTrans.bind("width","width");
-        localTrans.bind("height","height");
-        localTrans.bind("opacity","opacity");
+        localTrans.bind("x","css-x");
+        localTrans.bind("y","css-y");
+        localTrans.bind("width","css-width");
+        localTrans.bind("height","css-height");
+        localTrans.bind("opacity","css-opacity");
         localTrans.apply({x: 1, y: 2, width: "100%", height: 200, opacity: 0.5});
         scope.$digest();
         expect(element.css).toHaveBeenCalledWith({left: "1px", 
@@ -215,7 +215,7 @@ describe('service', function() {
       
       it("should hide an element using the hidden transition binding", function() {
         element.css.andReturn("inline");
-        localTrans.bind("hidden", "hidden");
+        localTrans.bind("hidden", "css-hidden");
         scope.hidden = true;
         scope.$digest();
         scope.hidden = false;
