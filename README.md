@@ -1,18 +1,44 @@
-The layout directive has a number of features that are intended to make programatic control of application display easier. 
+#Layout Component#
+The Layout Component is a set of [Angular JS](http://angularjs.org) directives designed to makes it easier to control complex interactive UI in web applications. It effectively moves some of the container positioning, sizing and display responsibilities away from the browser and implements a JavaScript layer which is more customizable. 
 
-**Block Positioning Control**
-------
-The Layout/Block setup allows application level control of layout by creating an abstraction layer between Angular controllers and the positioning of blocks in the browser window. A block scope is isolated from the Angular app and so has only its own layout related properties. The block directive knows how to apply these to its related DOM element. The layout directive controller has one job, to synchronize the properties of its containing blocks using a layout loop. The behavior of both of these directives can be overridden and augmented using custom layout & block controllers in which you can override the loop add your own properties and methods to blocks.
+The templating syntax is quite intuitive and has the following three tier structure:
 
-Out of the box it minimally mimics the layout flow of a browser. Layout reflows are triggered by changes in the application model using scope#$watch.
+	<a-layout>
+		<a-block>
+			<a-screen>
+				...
+			</a-screen>
+		</a-block>
+	</a-layout>
 
-**Transitions**
-------
-A transitioning directive called beSlidey can teach the block directive new ways of applying layout properties to its own DOM element. The idea is to create a more behavioral approach to application animations and transitions. This is just an idea right now, I'll see how it works out.
+Each tier has its own role to play in managing the positioning, display and transitions of its contents. Generally speaking this is intended for use with the outer container structure of an entire application or widget, not granular UI elements.
 
-**Screens**
-------
-Each defined block can contain multiple screen definitions in the template. However in the view it can display only one at a time. A new App scope is created in the screens directive and a _screen property is added. This provides application level control over the swapping/hiding of screens within that scope and it's children. 
+*Layout Controllers*
+--------------------
+You can enhance and override the default behavior of each tier by creating a controller function which augments the directive controller. The markup syntax works like so:
+
+	<a-layout with-controller="MyLayoutCtrl">
+		<a-block with-controller="MyBlockCtrl">
+			<a-screen with-controller="MyScreenCtrl">
+				...
+
+These can be applied to all three tiers and provides you with a hook to really customize the behavior of your layout. It also allows you to declare behavior in response to state changes in your application since these controllers are injected with service dependancies just like any other Angular JS controller.
+
+*Layout tier*
+-------------
+This is the layout container. It displays multiple blocks and its job is to position those blocks in relation to each-other, resizing its own dimensions to accommodate. It does this using a reflow function which is triggered by changes in its blocks. 
+
+**Extending it:** By default it is a very basic mimic of browser block flow. The key difference being that you can override the process providing your own implementation.
+
+*Block tier*
+------------
+The layout block is also a container, it holds a screen. While multiple screens can be declared, typically it only displays one at a time. The job of its controller is to manage the display of its screens and the process of swapping between them. The blocks position, dimensions and display are relative to its layout container. These properties are managed at one end by its parent through the layout reflow function and the other by the screen directive which keeps its dimensions up to date and can trigger transition states.
+
+**Extending it:** Augmenting the block controller is useful for configuring transition states, adding methods and properties to its scope which are available to the layout reflow function. Decorations on the controller are available to its screens.
+
+*Screen tier*
+-------------
+The screen directive creates a scope which is a descendent through the chain from the root application scope and in turn is the scope from which all child scopes inherit. Its controller is added as a '_screen' property which is your application api to control the display.
 
 	<a-block>
 		<a-screen>
@@ -24,3 +50,29 @@ Each defined block can contain multiple screen definitions in the template. Howe
 		</a-screen>
 	</a-block>
 
+**Extending it:** Methods and properties added to the screen controller are available to your application through the '$scope._screen' property. The screen controller also has access to its block controller (after the linking function is called!!).
+
+*Transition Service*
+--------------------
+The transition service allows Angular directive controllers to bind its scope properties to transitions which get applied to its element. It does this in such a way so that the implementation of the value changes on the actual element are delegated to a TransitionSuite object. TransitionSuites are really easy to create and use (checkout the source).
+
+The transition api allows you to create an instance which binds a scope to an element, define bindings, setup transition states and trigger them.
+
+	var trans = transition($scope, $element);
+	trans.bind("height", "height-css");
+	$scope.height = 40; // will fire the transtion suite which registers 'height-css' during the next $digest
+
+For much more information checkout the transition source code at ./app/js/services.js
+
+*beSlidey Directive*
+------------
+beSlidey is a directive which takes advantage of the decoupling between the directives and the implementation of transitions. When declared on aLayout, aBlock or aScreen tag it replaces the standard css transition bindings with jQuery animate. The syntax is looks like this:
+
+	<a-block be-slidey="height, y">
+		<a-screen></a-screen>
+	</a-block>
+
+The attribute takes a comma delimitated list of the scope properties it should bind to. Now when the blocks $scope.height or $scope.y property is changed it will trigger an animation.
+
+-----------------------
+Pull down the repo to checkout the demos and source code if you want to get a better idea how it all works.
