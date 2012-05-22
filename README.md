@@ -56,11 +56,15 @@ The screen directive creates a scope which is a descendent through the chain fro
 --------------------
 The transition service allows Angular directive controllers to bind its scope properties to transitions which get applied to its element. It does this in such a way so that the implementation of the value changes on the actual element are delegated to a TransitionSuite object. TransitionSuites are really easy to create and use (checkout the source).
 
-The transition api allows you to create an instance which binds a scope to an element, define bindings, setup transition states and trigger them.
+The transition api allows you to create an instance using a scope and an element, define bindings, setup transition states and trigger them.
 
 	var trans = transition($scope, $element);
-	trans.bind("height", "height-css");
-	$scope.height = 40; // will fire the transtion suite which registers 'height-css' during the next $digest
+	trans.bind("height", "css-height");
+	$scope.height = 40; // will fire the transtion suite which registers 'css-height' during the next $digest
+	trans.state.config("init", {height:100});
+	funciton init(){ 
+		trans.state("init"); // similar to $scope.height = 100;
+	}
 
 For much more information checkout the transition source code at ./app/js/services.js
 
