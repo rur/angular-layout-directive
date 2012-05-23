@@ -244,6 +244,36 @@ describe('service', function() {
         }
         expect(function(){localTrans.addSuite(TestSuite2);}).toThrow("Cannot register transition property 'noop' it is reserved.");
       });
+      
+      it("should not fire a transition suite when the triggered listener returns false", function() {
+        var fireSpy = jasmine.createSpy("Fire Spy")
+        function TestSuite2 () {
+          this.register("test", function(){return false;});
+          this.fire = fireSpy;
+        }
+        localTrans.addSuite(TestSuite2);
+        localTrans.bind("tester", "test");
+        scope.tester = 123;
+        scope.$digest();
+        expect(fireSpy).not.toHaveBeenCalled();
+      });
+      
+      it("should call an afterFire function if supplied in the config params", function() {
+        var afterFireSpy = jasmine.createSpy("After Fire Spy");
+        localTrans.apply({prop: "value"}, {afterFire: afterFireSpy})
+        scope.$digest();
+        expect(afterFireSpy).toHaveBeenCalled();
+      });
+      
+      describe("DefaultTransitionSuite", function() {
+        it("should call an onComplete method supplied to config params", function() {
+          var completeSpy = jasmine.createSpy("CSS on complete spy");
+          localTrans.bind("x","css-x")
+          localTrans.apply({x: "value"}, {onComplete:completeSpy });
+          scope.$digest();
+          expect(completeSpy).toHaveBeenCalled();
+        });
+      });
     });
   });
 });

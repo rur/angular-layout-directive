@@ -1,72 +1,63 @@
 'use strict';
 
-// 
-// function LayoutCtrlFactory () {
-//   function LayoutCtrl ($scope, $element, $attr) { // extends TransitionDirectiveCtrl
-//      var blocks = [],
-//        reflowFunction;
-// 
-//      // add/removes a block scope to the list of blocks
-//      // This also registers a listeners to the $destroy event
-//      this.addBlock = function  (blockScope) {
-//        return addBlockAt(blockScope, blocks.length);
-//      }
-//      
-//      this.addBlockAt = function(blockScope, ind){
-//         blockScope.$on("$destroy",function (event) {
-//           this.removeBlock(event.target)
-//         })
-//         ind = Math.min(ind, blockScope.lenght);
-//         blockScope.splice(ind,0,blockScope);
-//         return ind;
-//      }
-//      
-//      this.removeBlock = function  (blockScope) {
-//        var ind = blocks.indexOf(blockScope);
-//        if(ind > -1){
-//          blocks.splice(ind, 1);
-//        }
-//      }
-// 
-//      // apply a flow function
-//      this.setReflowFunction = function  (func) {
-//        reflowFunction = func;
-//      }
-// 
-//      this.defaultReflowFunction = function(){
-//        return function(blx, layout){
-//          var top = 0,
-//              blc,
-//              i;
-//          for (i=0; i < blx.length; i++) {
-//            blc = blx[i];
-//            blc.y = top;
-//            top += blc.height;
-//          };
-//          layout.height = top;
-//        }
-//      }
-// 
-//      // Triggers the reflow
-//      this.reflow = function () {
-//        reflowFunction(blocks, $scope);
-//      }
-//      
-//      // set defaults
-//      this.setReflowFunction(this.defaultReflowFunction());
-//      this.bindTransitions({ height:"height", width:"width" });
-// 
-//      // include user layout controller if provided
-//      var extCtrl = $attr["withController"];
-//      if(extCtrl){
-//        var locals = { 
-//            $scope:$scope,
-//            $element:$element,
-//            $attr:$attr  
-//          };
-//        augmentController(extCtrl, this, locals);
-//      }
-//    }
-//    
-//    return my_angular_utils.extendController(TransitionDirectiveCtrl, LayoutCtrl)
-// }
+function LayoutDirectiveCtrl ($scope, $element, $attrs, transition, augmentController) {
+  var self = this,
+      trans = this.transition = transition($scope, $element),
+      extCtrl = $attrs["withController"],
+      locals,
+      blocks = [],
+      flowFunc;
+  
+  this.addBlock = function(block){
+    blocks.push(block);
+  }
+  
+  this.addBlockAt = function(block, index){
+    blocks.splice(index,0,block);
+  }
+  
+  this.indexOfBlock = function(block){
+    for (var i=0; i < blocks.length; i++) {
+      if (block === blocks[i]) return i;
+    };
+    return -1;
+  }
+  
+  this.removeBlock = function(block){
+    var ind = self.indexOfBlock(block);
+    if(ind > -1) blocks.splice(ind, 1);
+  }
+  
+  this.getDefaultReflow = function(){
+    return function (blocks, scope) {
+      var pos = 0,
+          width = 0;
+      angular.forEach(blocks, function (block, ind){
+        block.y = pos;
+        pos += block.height;
+        if(width < block.width) width = block.width;
+      });
+      scope.height = pos;
+      scope.width = width;
+    }
+  }
+  
+  this.setReflow = function(func){
+    flowFunc = func;
+  }
+  
+  this.reflow = function(){
+    flowFunc(blocks, $scope);
+  }
+  
+  this.setReflow(self.getDefaultReflow());
+  
+  if(angular.isString(extCtrl) && extCtrl.length > 0) {
+    locals = { $scope: $scope, 
+               $element: $element, 
+               $attrs: $attrs, 
+               $trans: trans };
+    augmentController(extCtrl, this, locals);
+  }
+}
+LayoutDirectiveCtrl.$inject = ["$scope", "$element", "$attrs", "transition", "augmentController"];

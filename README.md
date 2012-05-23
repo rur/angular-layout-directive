@@ -60,7 +60,7 @@ The transition api allows you to create an instance using a scope and an element
 
 	var trans = transition($scope, $element);
 	trans.bind("height", "css-height");
-	$scope.height = 40; // will fire the transtion suite which registers 'css-height' during the next $digest
+	$scope.height = 40; // will fire the transtion suite which registers 'css-heightgit ' during the next $digest
 	trans.state.config("init", {height:100});
 	funciton init(){ 
 		trans.state("init"); // similar to $scope.height = 100;

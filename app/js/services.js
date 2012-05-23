@@ -105,6 +105,7 @@ angular.module('myApp.services', [])
       });
       
       this.fire = function(element, config){
+        var onComplete = config && config["onComplete"] || angular.noop;
         if(!defaultDisplay && element.css("display") != "none") defaultDisplay = element.css("display");
         switch(display){
           case "show":
@@ -117,6 +118,7 @@ angular.module('myApp.services', [])
         element.css(props);
         display = null;
         props = {};
+        onComplete();
       }
     }
     
@@ -148,7 +150,7 @@ angular.module('myApp.services', [])
       
       /**
        * Transition 
-       * This object binds scope object properties to transitions which get applied to an element
+       * This object binds scope properties to transitions which get applied to an element
        *
        * @constructor
        * @param {angular.module.ng.$rootScope.Scope} scope The scope to bind transiton properties to
@@ -289,7 +291,7 @@ angular.module('myApp.services', [])
          * Example:
          *    function OpacityTransitionSuite () {
          *      var value;
-         *      this.register("opacity", function(newvalue,oldvalue){
+         *      this.register("css-opacity", function(newvalue,oldvalue){
          *        // some validation here
          *        value = newval;
          *      });
@@ -301,9 +303,9 @@ angular.module('myApp.services', [])
          *    }
          *    ...
          *    transition.addSuite(OpacityTransitionSuite);
-         *    transition.bind("myOpacity", "opacity");
+         *    transition.bind("opacity", "css-opacity");
          *    ...
-         *    $scope.myOpacity = .5; // will apply css 'opacity: .5' to element
+         *    $scope.opacity = .5; // will apply css 'opacity: .5' to element
          * 
          * Only transtion suite instances that have received changes will have their 'fire' method called.
          * 
@@ -332,6 +334,9 @@ angular.module('myApp.services', [])
               suite.onCue = false;
             }
           };
+          if(fireParams && angular.isFunction(fireParams["afterFire"])){
+            (fireParams["afterFire"])();
+          }
           fireParams = undefined;
         }
         
@@ -340,8 +345,7 @@ angular.module('myApp.services', [])
               transFn,
               property = bindings[scopeProperty];
           if(!property) {
-            $exceptionHandler( "Transition Service "+
-                               "No transition binding found for "+
+            $exceptionHandler( "Transition: No transition binding found for "+
                                scopeProperty+" but one was expected");
           }
           for (var i=0; i < suites.length; i++) {
@@ -395,8 +399,10 @@ angular.module('myApp.services', [])
               if(prop == reservedProp) $exceptionHandler("Cannot register transition property '"+prop+"' it is reserved.");
             });
             this.transitionProps[prop] = function (newval, oldval) {
-              fn(newval, oldval);
-              self.onCue = true;
+              // if the transition function returns a false boolean object the suite isn't put on cue
+              if(fn(newval, oldval) !== false){
+                self.onCue = true;
+              }
             };
           }
         }
