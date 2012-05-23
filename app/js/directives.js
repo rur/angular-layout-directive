@@ -4,54 +4,85 @@
 angular.module('myApp.directives', [])
   .directive('aLayout', function() {
       return {
-        restrict:"E",
+        restrict:"EA",
         scope:{},
         transclude:true,
         template:'<div class="a-layout" ng-transclude></div>',
         replace:true,
         controller: LayoutDirectiveCtrl, // see layout.js
         link:function(scope, iElement, iAttrs, ctrl){
-          ctrl.transition.bind("width", "css-width");
-          ctrl.transition.bind("height", "css-height");
-          ctrl.transition.apply({width: "100%"}, {afterFire: function(){
-            // stop width from being changed again
-            ctrl.transition.bind("width", "noop");
-          } });
+          ctrl.transition.state("init");
         }
       } 
     })  
-    // .directive('aBlock', ['transition','augmentController','$log', function(transition, augmentController, $log) {
-    //   return {
-    //     restrict:"E",
-    //     scope:{},
-    //     require:["^aLayout","aBlock"],
-    //     transclude:true,
-    //     template:'<div class="a-block" ng-transclude></div>',
-    //     replace:true,
-    //     controller: function controller ($scope, $element, $attrs) {
-    //       
-    //     },
-    //     link:function(scope, iElement, iAttrs, controllers){
-    //       var layout = controllers[0],
-    //           block = controllers[1];
-    //     }
-    //   } 
-    // }])
-    // .directive('aScreen', ['transition','augmentController','$log', function(transition, augmentController, $log) {
-    //   return {
-    //     restrict:"E",
-    //     scope:true,
-    //     require:["^aBlock","aScreen"],
-    //     controller: function controller ($scope, $element, $attrs) {
-    //       
-    //     },
-    //     link:function(scope, iElement, iAttrs, controllers){
-    //       var block = controllers[0],
-    //           screen = controllers[1];
-    //       
-    //     }
-    //   } 
-    // }])
+    .directive('aBlock', function() {
+      return {
+        restrict:"EA",
+        scope:{},
+        require:["^aLayout","aBlock"],
+        transclude:true,
+        template:'<div class="a-block" ng-transclude></div>',
+        replace:true,
+        controller: BlockDirectiveCtrl, // see layout.js
+        link:function(scope, iElement, iAttrs, controllers){
+          var layout = controllers[0],
+              block = controllers[1];
+          block.setLayoutCtrl(layout);
+          iElement.css("width","100%");
+          iElement.css("position","absolute");
+          
+          scope.$watch("height", function(){
+            layout.reflow();
+          })
+        }
+      } 
+    })
+    .directive('aScreen', [ "$compile", function($compile) {
+      return {
+        restrict:"EA",
+        scope:true,
+        require:["^aBlock","aScreen"],
+        controller: ScreenDirectiveCtrl,
+        compile:function(element, attr){
+          var template = element.html();
+          element.html("");
+          return function(scope, iElement, iAttrs, controllers){
+            var screen = controllers[1],
+                block = screen.block = controllers[0],
+                id = scope._screen.id = block.registerScreenName(iAttrs.withName),
+                childScope;
+            screen.transition.state("init");
+            
+            block.scope.$watch("currentScreen", function(newval, oldval){
+              if(newval == oldval) return;
+              if(oldval == id){
+                scope._screen.hide();
+              } else if(newval == id) {
+                if(childScope){
+                  childScope.$destroy();
+                }
+                childScope = scope.$new();
+                element.html(template);
+                $compile(element.contents())(childScope);
+                scope._screen.show();
+              }
+            });
+            scope.$watch(function(){
+              return $(element).height();
+            },
+            function(newval, oldval){
+              block.screenHeight(newval);
+            });
+            scope.$on("clearContent", function(event){
+              if (childScope) {
+                childScope.$destroy();
+                childScope = null;
+              }
+              iElement.html('');
+            })
+        }}
+      } 
+    }])
     // // .directive('beSlidey', function(){
     //   return {
     //     require: ["?aLayout", "?aBlock", "?aScreen"],

@@ -162,7 +162,8 @@ angular.module('myApp.services', [])
             suites = [],
             doFire = false,
             fireParams,
-            un$watchers = [];
+            un$watchers = [],
+            un$watchersHash = {};
         
         //////////////////////////
         // Initialisation
@@ -235,6 +236,7 @@ angular.module('myApp.services', [])
          * one of the default or added suites.
          * 
          * @param {string|object<string,string>} 
+         * @param {string} 
          */
         this.bind = function  (property, transProp) {
           var scopeProp,
@@ -257,8 +259,37 @@ angular.module('myApp.services', [])
               (getTransitionPropertyFunction(scopeProp))(newval, oldval);
               doFire = true;
             }));
+            un$watchersHash[scopeProp] = un$watchers[un$watchers.length-1];
           }
           bindings[scopeProp] = transProp;
+        }
+        
+        /**
+         * Remove a binding
+         * 
+         * This will remove any watchers that are applied to this expression.
+         * 
+         * @param {string|Array} property A single string or array of scope expression that were previously bound
+         */
+        this.unbind = function(property){
+          if(angular.isArray(property)){
+            angular.forEach(property, function(prop){
+              trans.unbind(prop);
+            })
+            return;
+          }
+          var un$watcher = un$watchersHash[property];
+          if(angular.isFunction(un$watcher)){
+            un$watcher();
+            un$watchersHash[property] = null;
+            for (var i = un$watchers.length - 1; i >= 0; i--){
+              if(un$watchers[i] === un$watcher) {
+                un$watchers.splice(i,1);
+                break;
+              }
+            };
+          }
+          bindings[property] = null;
         }
         
         /**

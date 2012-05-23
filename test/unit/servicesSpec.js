@@ -265,6 +265,15 @@ describe('service', function() {
         expect(afterFireSpy).toHaveBeenCalled();
       });
       
+      it("should unbind", function() {
+        scope.$digest();
+        expect(fireSpy.callCount).toEqual(1);
+        localTrans.unbind("prop");
+        scope.prop = "123";
+        scope.$digest();
+        expect(fireSpy.callCount).toEqual(1);
+      });
+      
       describe("DefaultTransitionSuite", function() {
         it("should call an onComplete method supplied to config params", function() {
           var completeSpy = jasmine.createSpy("CSS on complete spy");
