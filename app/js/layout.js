@@ -17,7 +17,7 @@ function LayoutDirectiveCtrl ($scope, $element, $attrs, transition, augmentContr
   trans.bind("height", "css-height");
   
   $element.css("width","100%");
-  $element.css("position","absolute");
+  $element.css("position","relative");
   
   this.addBlock = function(block){
     blocks.push(block);
@@ -79,15 +79,54 @@ LayoutDirectiveCtrl.$inject = ["$scope", "$element", "$attrs", "transition", "au
  * 
  * 
  */
-function BlockDirectiveCtrl ($scope, $element, $attrs, transition, augmentController) {
+function BlockDirectiveCtrl ($scope, $element, $attrs, transition, augmentController, $exceptionHandler) {
   var self = this,
       trans = this.transition = transition($scope, $element),
       extCtrl = $attrs["withController"],
-      locals;
+      locals,
+      ids = [];
   trans.state.config("init", {height: 0});    
   trans.bind({ height: "css-height",
                y: "css-y", 
                opacity: "css-opacity" });
+  
+  this.registerScreenID = function(id){
+    id = safeIncrKey(id);
+    ids.push(id);
+    return id;
+  }
+  
+  this.getScreenIndex = function (id){
+    for (var i=0; i < ids.length; i++) {
+      if(ids[i] == id) return i;
+    };
+    return -1;
+  }
+  
+  this.showScreen = function(id){
+    if(self.getScreenIndex(id) > -1){
+      $scope.currentScreen = id;
+    } else {
+      $exceptionHandler("Cannot show screen '"+id+"' there is no screen registered with that id");
+    }
+  }
+  
+  this.deltaID = function(delta, startID){
+    var d, ind, start;
+    if(startID){
+      start = self.getScreenIndex(startID);
+      if(start == -1) $exceptionHandler("Screen ID '" +startID+"' not found, cannot retreive delta ID");
+    } else {
+      start = 0;
+    }
+    d = (start+delta) % ids.length;
+    ind = d>-1 ? d : d+ids.length;
+    return ids[ind];
+  }
+  
+  this.screenHeight = function(height){
+    $scope.height = height;
+  }
   
   $element.css("width","100%");
   $element.css("position","absolute");
@@ -99,5 +138,24 @@ function BlockDirectiveCtrl ($scope, $element, $attrs, transition, augmentContro
                $trans: trans };
     augmentController(extCtrl, this, locals);
   }
+  function safeIncrKey(key){
+    if(!(angular.isString(key) && (key = trim(key)).length>0)){
+      key = ids.length.toString();
+    }
+    var reg = RegExp("^"+key+"(_\\d+)?$"),
+        matches = [];
+    angular.forEach(ids, function(id){
+      if(reg.test(id)){
+        matches.push(id);
+      }
+    });
+    if(matches.length > 0 ){
+      return key+"_"+matches.length;
+    }
+    return key;
+  }
+  function trim(stringToTrim) {
+  	return stringToTrim.replace(/^\s+|\s+$/g,"");
+  }
 }
-LayoutDirectiveCtrl.$inject = ["$scope", "$element", "$attrs", "transition", "augmentController"];
+LayoutDirectiveCtrl.$inject = ["$scope", "$element", "$attrs", "transition", "augmentController", "$exceptionHandler"];

@@ -18,7 +18,8 @@ describe("layout component", function() {
     transService = jasmine.createSpy("Tansition Service Spy").andReturn(transition);
     attrs = {withController: "SomeController"};
     augmentCtrl = jasmine.createSpy("Augment Controller Service Spy");
-    element = angular.element("<div></div>");
+    // document.createElement needed for IE7
+    element = angular.element(document.createElement("div"));
   }));
   
   describe("LayoutDirectiveCtrl", function() {
@@ -44,7 +45,17 @@ describe("layout component", function() {
       expect(ctrl.transition).toEqual(transition);
       expect(transition.state.config).toHaveBeenCalledWith("init", {height: 0});
       expect(transition.bind).toHaveBeenCalledWith("height", "css-height" );
-      expect(element.attr("style")).toMatch(/width: 100%; position: absolute;/);
+    });
+    
+    it("should set the required css formatting", function() {
+      // hack to get test to pass IE7
+      var el,
+          html;
+      el = angular.element(document.createElement("div"));
+      el.append(element);
+      html = el.html();
+      expect(html).toMatch(/width: 100%/i);
+      expect(html).toMatch(/position: relative/i);
     });
     
     it("should augment the controller", function() {
@@ -131,7 +142,17 @@ describe("layout component", function() {
       expect(transition.bind).toHaveBeenCalledWith({ height: "css-height",
                                                      y: "css-y", 
                                                      opacity: "css-opacity" });
-      expect(element.attr("style")).toMatch(/width: 100%; position: absolute;/);
+    });
+    
+    it("should set the required css formatting", function() {
+      // hack to get test to pass IE7
+      var el,
+          html;
+      el = angular.element(document.createElement("div"));
+      el.append(element);
+      html = el.html();
+      expect(html).toMatch(/width: 100%/i);
+      expect(html).toMatch(/position: absolute/i);
     });
     
     it("should augment the controller", function() {
@@ -143,11 +164,50 @@ describe("layout component", function() {
                                                   $trans: transition });
     });
     
-    // it should register a screen id returning a unique key
-    // it should set the currentScreen
-    // it should provide the index of the screen id supplied
-    // it should provide the id at a delta
-    // it should set screenHeight
+    it("should register a screen id returning a unique key", function() {
+      var id = ctrl.registerScreenID();
+      expect(id).not.toBeNull();
+      expect(id).toBeDefined();
+      expect(ctrl.getScreenIndex(id)).toEqual(0);
+      id = ctrl.registerScreenID("abc");
+      expect(ctrl.getScreenIndex(id)).toEqual(1);
+      id = ctrl.registerScreenID("abc");
+      expect(ctrl.getScreenIndex(id)).toEqual(2);
+      id = ctrl.registerScreenID();
+      expect(id).toEqual("3");
+      expect(ctrl.getScreenIndex(id)).toEqual(3);
+      id = ctrl.registerScreenID("abc");
+      expect(id).toEqual("abc_2");
+      id = ctrl.registerScreenID("0");
+      expect(id).toEqual("0_1");
+      expect(ctrl.getScreenIndex(id)).toEqual(5);
+    });
+    
+    it("should set the currentScreen", function() {
+      var id = "SomeScreenID";
+      expect(function(){ ctrl.showScreen(id);  })
+        .toThrow("Cannot show screen '"+id+"' there is no screen registered with that id");
+      id = ctrl.registerScreenID(id);
+      ctrl.showScreen(id);
+      expect(scope.currentScreen).toEqual(id);
+    });
+    
+    it("should provide the id at a delta", function() {
+      var ids = [];
+      for (var i=0; i < 10; i++) {
+        ids.push(ctrl.registerScreenID());
+      };
+      expect(ctrl.deltaID(2)).toEqual(ids[2]);
+      expect(ctrl.deltaID(2,ids[2])).toEqual(ids[4]);
+      expect(ctrl.deltaID(4345,ids[5])).toEqual(ids[0]);
+      expect(ctrl.deltaID(-4346,ids[5])).toEqual(ids[9]);
+      expect(function(){ctrl.deltaID(0, "missing");}).toThrow("Screen ID 'missing' not found, cannot retreive delta ID");
+    });
+    
+    it("should set screenHeight", function() {
+      ctrl.screenHeight(200);
+      expect(scope.height).toEqual(200);
+    });
   });
   
   describe("ScreenDirectiveCtrl", function() {
