@@ -12,6 +12,7 @@ function LayoutDirectiveCtrl ($scope, $element, $attrs, transition, augmentContr
       extCtrl = $attrs["withController"],
       locals,
       blocks = [],
+      triggered = false,
       flowFunc;
   trans.state.config("init", {height: 0});
   trans.bind("height", "css-height");
@@ -20,11 +21,12 @@ function LayoutDirectiveCtrl ($scope, $element, $attrs, transition, augmentContr
   $element.css("position","relative");
   
   this.addBlock = function(block){
-    blocks.push(block);
+    blocks.push(self.removeBlock(block));
+    return block;
   }
   
   this.addBlockAt = function(block, index){
-    blocks.splice(index,0,block);
+    blocks.splice(index,0,self.removeBlock(block));
   }
   
   this.indexOfBlock = function(block){
@@ -37,6 +39,7 @@ function LayoutDirectiveCtrl ($scope, $element, $attrs, transition, augmentContr
   this.removeBlock = function(block){
     var ind = self.indexOfBlock(block);
     if(ind > -1) blocks.splice(ind, 1);
+    return block;
   }
   
   this.getDefaultReflow = function(){
@@ -58,7 +61,13 @@ function LayoutDirectiveCtrl ($scope, $element, $attrs, transition, augmentContr
   }
   
   this.reflow = function(){
-    flowFunc(blocks, $scope);
+    if(!triggered){
+      $scope.$evalAsync(function(){
+        flowFunc(blocks, $scope);
+        triggered = false;
+      });
+      triggered = true;
+    }
   }
   
   this.setReflow(self.getDefaultReflow());
@@ -84,7 +93,11 @@ function BlockDirectiveCtrl ($scope, $element, $attrs, transition, augmentContro
       trans = this.transition = transition($scope, $element),
       extCtrl = $attrs["withController"],
       locals,
-      ids = [];
+      ids = [],
+      un$watchers = [];  
+  
+  $element.css("width","100%");
+  $element.css("position","absolute");
   trans.state.config("init", {height: 0});    
   trans.bind({ height: "css-height",
                y: "css-y", 
@@ -127,9 +140,12 @@ function BlockDirectiveCtrl ($scope, $element, $attrs, transition, augmentContro
   this.screenHeight = function(height){
     $scope.height = height;
   }
+
+  this.triggerReflow = function(){
+    $scope.triggerReflow();
+  }
   
-  $element.css("width","100%");
-  $element.css("position","absolute");
+  $scope.$watch("height", self.triggerReflow);
   
   if(angular.isString(extCtrl) && extCtrl.length > 0) {
     locals = { $scope: $scope, 
@@ -138,6 +154,7 @@ function BlockDirectiveCtrl ($scope, $element, $attrs, transition, augmentContro
                $trans: trans };
     augmentController(extCtrl, this, locals);
   }
+  
   function safeIncrKey(key){
     if(!(angular.isString(key) && (key = trim(key)).length>0)){
       key = ids.length.toString();
@@ -159,3 +176,45 @@ function BlockDirectiveCtrl ($scope, $element, $attrs, transition, augmentContro
   }
 }
 LayoutDirectiveCtrl.$inject = ["$scope", "$element", "$attrs", "transition", "augmentController", "$exceptionHandler"];
+
+/**
+ * ScreenDirectiveCtrl
+ * 
+ * 
+ * 
+ */
+function ScreenDirectiveCtrl($scope, $element, $attrs, transition, augmentController){
+  var self = this,
+      screen = $scope._screen = $scope.$new(true), // isolated scope for layout
+      extCtrl = $attrs["withController"],
+      trans = this.transition = transition(screen, $element),
+      locals;
+  
+  trans.state.config("init", {hidden: true});
+  trans.state.config("show", {hidden: false});
+  trans.state.config("hide", {hidden: true});
+  trans.bind({ hidden: "css-hidden" });
+  
+  screen.show = function(id){
+    id = id || screen.id;
+    self.layout.showScreen(id);
+    if(id == screen.id) trans.state("show");
+  }
+  
+  screen.hide = function(){
+    trans.state("hide");
+  }
+  
+  if(angular.isString(extCtrl) && extCtrl.length > 0) {
+    locals = { $scope: $scope, 
+               $element: $element, 
+               $attrs: $attrs, 
+               $trans: trans };
+    augmentController(extCtrl, this, locals);
+  }
+}
+ScreenDirectiveCtrl.$inject = ["$scope", "$element", "$attrs", "transition", "augmentController"]
+
+
+
+

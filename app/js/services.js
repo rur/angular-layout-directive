@@ -158,7 +158,6 @@ angular.module('myApp.services', [])
        */
       function Transition ( scope, element ) {
         var trans = this,
-            bindings = {noop: "noop"},
             suites = [],
             doFire = false,
             fireParams,
@@ -188,6 +187,13 @@ angular.module('myApp.services', [])
          * Use Transition#state.config function to add and configure states.
          */
         this.states = {};
+        
+        /**
+         * Hash map with the configured scope property to transition property bindings
+         * 
+         * You MUST use Transition#bind and Transition#unbind to edit this
+         */ 
+        this.bindings = {};
         
         /**
          * Trigger a configured transition state to be applied.
@@ -254,14 +260,14 @@ angular.module('myApp.services', [])
           // validate, create a scope watcher if required, then register binding
           scopeProp = validateAndTrimProperty(property, "scope");
           transProp = validateAndTrimProperty(transProp, "transition");
-          if(!bindings.hasOwnProperty(scopeProp)){
+          if(!trans.bindings.hasOwnProperty(scopeProp)){
             un$watchers.push( scope.$watch(scopeProp,function (newval, oldval) {
               (getTransitionPropertyFunction(scopeProp))(newval, oldval);
               doFire = true;
             }));
             un$watchersHash[scopeProp] = un$watchers[un$watchers.length-1];
           }
-          bindings[scopeProp] = transProp;
+          trans.bindings[scopeProp] = transProp;
         }
         
         /**
@@ -289,7 +295,7 @@ angular.module('myApp.services', [])
               }
             };
           }
-          bindings[property] = null;
+          trans.bindings[property] = null;
         }
         
         /**
@@ -374,7 +380,7 @@ angular.module('myApp.services', [])
         function getTransitionPropertyFunction (scopeProperty) {
           var suite,
               transFn,
-              property = bindings[scopeProperty];
+              property = trans.bindings[scopeProperty];
           if(!property) {
             $exceptionHandler( "Transition: No transition binding found for "+
                                scopeProperty+" but one was expected");

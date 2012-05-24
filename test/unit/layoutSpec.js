@@ -14,7 +14,7 @@ describe("layout component", function() {
     scope = $rootScope.$new();
     injector = $injector;
     transition = jasmine.createSpyObj("Transition Spy", ["state", "bind", "addSuite"]);
-    transition.state = jasmine.createSpyObj("Transition State Spy", ["config"])
+    transition.state.config = jasmine.createSpy("Transition State Config Spy");
     transService = jasmine.createSpy("Tansition Service Spy").andReturn(transition);
     attrs = {withController: "SomeController"};
     augmentCtrl = jasmine.createSpy("Augment Controller Service Spy");
@@ -111,12 +111,25 @@ describe("layout component", function() {
       };
       ctrl.setReflow(newFlow);
       ctrl.reflow();
+      scope.$digest();
       angular.forEach(blks, function(blk){
         expect(blk).toHaveBeenCalled();
       })
       expect(scope.abc).toEqual(123);
     });
+    it("should only trigger a reflow once despite multiple calls", function() {
+      var flowSpy = jasmine.createSpy("Reflow Spy");
+      ctrl.setReflow(flowSpy);
+      ctrl.reflow();
+      ctrl.reflow();
+      ctrl.reflow();
+      scope.$digest();
+      scope.$digest();
+      expect(flowSpy.callCount).toEqual(1);
+    });
   });
+  
+  
   describe("BlockDirectiveCtrl", function() {
     var ctrl;
     beforeEach(function() {
@@ -211,8 +224,11 @@ describe("layout component", function() {
   });
   
   describe("ScreenDirectiveCtrl", function() {
-    var ctrl;
+    var ctrl, _screen, layout, id;
     beforeEach(function() {
+      _screen = scope.$new(true);
+      _screen.id = id = "testScreenID";
+      layout = jasmine.createSpyObj("Layout Controller Spy", ["showScreen"]);
       var locals = {
         $scope: scope,
         $element: element,
@@ -220,14 +236,54 @@ describe("layout component", function() {
         transition: transService,
         augmentController: augmentCtrl
       }
+      spyOn(scope, "$new").andReturn(_screen);
       ctrl = injector.instantiate(ScreenDirectiveCtrl, locals);
+      ctrl.layout = layout;
     });
-    // it should instanciate the ScreenDirectiveCtrl
-    // it should create and configure the transition
-    // it should augment the controller
-    // it should create and configure transitions
-    // it should create an isolated scope for the screen api
-    // it should add a show method to the screen api
-    // it should add a hide method to the screen api
+    
+    it("should instanciate the ScreenDirectiveCtrl", function() {
+      expect(ctrl).not.toBeNull();
+      expect(ctrl).toBeDefined();
+    });
+    
+    it("should create and configure the transitions", function() {
+      var args;
+      expect(transService).toHaveBeenCalledWith(_screen, element);
+      expect(ctrl.transition).toEqual(transition);
+      expect(transition.state.config).toHaveBeenCalledWith("init", {hidden: true});
+      expect(transition.state.config).toHaveBeenCalledWith("show", {hidden: false});
+      expect(transition.state.config).toHaveBeenCalledWith("hide", {hidden: true});
+      expect(transition.bind).toHaveBeenCalledWith({ hidden: "css-hidden" });
+    });
+    
+    it("should augment the controller", function() {
+      expect(augmentCtrl).toHaveBeenCalledWith( "SomeController",
+                                                ctrl,
+                                                { $scope: scope, 
+                                                  $element: element, 
+                                                  $attrs: attrs, 
+                                                  $trans: transition });
+    });
+    
+    it("should create an isolated scope for the screen api", function() {
+      expect(scope.$new).toHaveBeenCalledWith(true);
+      expect(scope._screen).toEqual(_screen);
+    });
+    
+    it("should add a show method to the screen api", function() {
+      expect(angular.isFunction(scope._screen.show)).toBeTruthy();
+      _screen.show();
+      expect(layout.showScreen).toHaveBeenCalledWith(id);
+      expect(transition.state).toHaveBeenCalledWith("show");
+      _screen.show("someOtherID");
+      expect(layout.showScreen).toHaveBeenCalledWith("someOtherID");
+      expect(transition.state.callCount).toEqual(1);
+    });
+    
+    it("should add a hide method to the screen api", function() {
+      expect(angular.isFunction(scope._screen.hide)).toBeTruthy();
+      _screen.hide();
+      expect(transition.state).toHaveBeenCalledWith("hide");
+    });
   });
 });

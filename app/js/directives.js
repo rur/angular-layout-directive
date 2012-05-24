@@ -26,14 +26,14 @@ angular.module('myApp.directives', [])
         controller: BlockDirectiveCtrl, // see layout.js
         link:function(scope, iElement, iAttrs, controllers){
           var layout = controllers[0],
-              block = controllers[1];
-          block.setLayoutCtrl(layout);
+              block = controllers[1],
+              reflow_un$watchers = {};
           iElement.css("width","100%");
           iElement.css("position","absolute");
-          
-          scope.$watch("height", function(){
+          layout.addBlock(scope);
+          scope.triggerReflow = function(){
             layout.reflow();
-          })
+          }
         }
       } 
     })
@@ -67,19 +67,21 @@ angular.module('myApp.directives', [])
                 scope._screen.show();
               }
             });
-            scope.$watch(function(){
-              return $(element).height();
-            },
-            function(newval, oldval){
-              block.screenHeight(newval);
-            });
-            scope.$on("clearContent", function(event){
+            
+            block.scope.$on("clearContent", function(event){
               if (childScope) {
                 childScope.$destroy();
                 childScope = null;
               }
               iElement.html('');
-            })
+            });
+            
+            scope.$watch(function(){
+                return $(element).height();
+              },
+              function(newval, oldval){
+                block.screenHeight(newval);
+              });
         }}
       } 
     }])
