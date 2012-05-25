@@ -72,21 +72,25 @@ angular.module('myApp.services', [])
           defaultDisplay;
       
       this.register("css-x", function (newval, oldval) {
+        if( !(angular.isString(newval) || angular.isNumber(newval)) ) return false;
         newval = !isNaN(newval) ? newval.toString() + "px" : newval;
         props["left"] = newval;
       })
       
       this.register("css-y", function (newval, oldval) {
+        if( !(angular.isString(newval) || angular.isNumber(newval)) ) return false;
         newval = !isNaN(newval) ? newval.toString() + "px" : newval;
         props["top"] = newval;
       })
       
       this.register("css-width", function (newval, oldval) {
+        if( !(angular.isString(newval) || angular.isNumber(newval)) ) return false;
         newval = !isNaN(newval) ? newval.toString() + "px" : newval;
         props["width"] = newval;
       })
             
       this.register("css-height", function (newval, oldval) {
+        if( !(angular.isString(newval) || angular.isNumber(newval)) ) return false;
         newval = !isNaN(newval) ? newval.toString() + "px" : newval;
         props["height"] = newval;
       })
@@ -97,7 +101,7 @@ angular.module('myApp.services', [])
       
       this.register("css-opacity", function (newval, oldval) {
         var ieVal;
-        if(isNaN(newval)) return;
+        if(isNaN(newval)) return false;
         props["opacity"] = newval;
         props["-moz-opacity"] = newval;
         ieVal = Math.round(newval*100);

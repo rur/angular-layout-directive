@@ -2,16 +2,23 @@
 
 .a-layout {
   position: relative;
-  background-color: red;
+/*  background-color: red;*/
   width:  10px;
   height:  10px;
 }
 
 .a-block {
   position: absolute;
-  background-color: blue;
+  background-color: "#ffcccc";
 }
 
 .a-screen p {
   color:white;
+}
+
+#top {
+  background-color: #ddd;
+}
+#bottom {
+  background-color: #dff;
 }

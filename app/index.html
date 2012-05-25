@@ -6,21 +6,42 @@
   <link rel="stylesheet" href="css/app.css"/>
 </head>
 <body ng-controller="AppCtrl">
+   <input type="button" name="show" value="Show" id="show" ng-click="$broadcast('show')">
   <a-layout>
-	<a-block be-slidey="x,y,width,height,opacity">
-		<a-screen>
-			<div ng-controller="SubCtrl">
-				<p>{{test}}</p>
-				<label for="x-position">x</label><input type="text" ng-model="xPosition" ><br>
-				<label for="y-position">y</label><input type="text" ng-model="yPosition"><br>
-				<label for="height">Height</label><input type="text" ng-model="height"><br>
-				<label for="width">Width</label><input type="text" ng-model="width"><br>
-				<label for="opacity">opacity</label><input type="text" ng-model="opacity"><br>
-				<input type="button" value="Apply Position" ng-click="setPosition(positions())"><br>
-				<input type="button" value="Double up X" ng-click="update()">
-			</div>
-		</a-screen>
-	</a-block>
+   <a-block id="top" be-slidey="height">
+      <a-screen ng-controller="SubCtrl">
+         <div>
+            <p>Test = {{test}}</p>
+            <p><a ng-click="_screen.show('screen-2')">Show Screen 2</a></p>
+            <p><a ng-click="_screen.hide()">Hide</a></p>
+         </div>
+      </a-screen>
+      <a-screen with-name="screen-2">
+         <div>
+            <p>Screen2</p>
+            <p><a ng-click="_screen.show('screen')">Show Screen 1</a></p>
+            <br>
+            <br>
+            <p><a ng-click="_block.hide()">Hide Block!</a></p>
+            <br>
+         </div>
+      </a-screen>
+   </a-block>
+   <a-block id="bottom" id="other-block" be-slidey="y,height">
+      <a-screen with-name="thisScreen">
+         <div ng-click="_screen.show('otherScreen')">
+            <p>asdf</p>
+         </div>
+      </a-screen>
+      <a-screen with-name="otherScreen">
+         <div ng-click="_screen.show('thisScreen')">
+            <p>asdfasdfsdf</p>
+            <p>asdfasdfsdf</p>
+            <p>asdfasdfsdf</p>
+            <p>asdfasdfsdf</p>
+         </div>
+      </a-screen>
+   </a-block>
 </a-layout>
   <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
   <script src="lib/angular/angular.js"></script>

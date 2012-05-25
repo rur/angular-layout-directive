@@ -2,6 +2,10 @@
 
 /* Directives */
 angular.module('myApp.directives', [])
+  /**
+   * A Layout directive
+   * 
+   */
   .directive('aLayout', function() {
       return {
         restrict:"EA",
@@ -10,11 +14,19 @@ angular.module('myApp.directives', [])
         template:'<div class="a-layout" ng-transclude></div>',
         replace:true,
         controller: LayoutDirectiveCtrl, // see layout.js
+        //////////////////
+        // LINK
         link:function(scope, iElement, iAttrs, ctrl){
-          ctrl.transition.state("init");
+          //////
+          // init
+          ctrl.init();
         }
       } 
     })  
+    /**
+     * A Block directive
+     * 
+     */
     .directive('aBlock', function() {
       return {
         restrict:"EA",
@@ -24,127 +36,131 @@ angular.module('myApp.directives', [])
         template:'<div class="a-block" ng-transclude></div>',
         replace:true,
         controller: BlockDirectiveCtrl, // see layout.js
+        //////////////////
+        // LINK
         link:function(scope, iElement, iAttrs, controllers){
+          // properties
           var layout = controllers[0],
-              block = controllers[1],
-              reflow_un$watchers = {};
-          iElement.css("width","100%");
-          iElement.css("position","absolute");
+              block = controllers[1];
+          //
+          // Watchers and Listeners
+          //
+          scope.$watch("screenHeight", block.screenHeightUpdate);
+          scope.$watch("displayingScreen()", function(newval){
+            if(!newval){
+              scope.screenHeight = 0;
+            }
+          })
+          // 
+          // init
           layout.addBlock(scope);
           scope.triggerReflow = function(){
             layout.reflow();
           }
+          block.init();
         }
       } 
     })
+    /**
+     * A Screen Directive
+     * 
+     */
     .directive('aScreen', [ "$compile", function($compile) {
       return {
         restrict:"EA",
         scope:true,
         require:["^aBlock","aScreen"],
         controller: ScreenDirectiveCtrl,
+        //////////////////
+        // COMPILE
         compile:function(element, attr){
           var template = element.html();
           element.html("");
+          //////////////
+          // LINK
           return function(scope, iElement, iAttrs, controllers){
+            // properties
             var screen = controllers[1],
-                block = screen.block = controllers[0],
-                id = scope._screen.id = block.registerScreenName(iAttrs.withName),
+                block = controllers[0],
+                blockScope = scope._block = block.scope,
+                id = scope._screen.id = block.registerScreen(iAttrs.withName),
                 childScope;
-            screen.transition.state("init");
-            
-            block.scope.$watch("currentScreen", function(newval, oldval){
-              if(newval == oldval) return;
-              if(oldval == id){
-                scope._screen.hide();
-              } else if(newval == id) {
+            //
+            // Watchers and Listeners
+            //
+            blockScope.$watch("currentScreen", function(newval, oldval){
+              if(!scope.displaying && newval == id) {
                 if(childScope){
                   childScope.$destroy();
                 }
                 childScope = scope.$new();
-                element.html(template);
-                $compile(element.contents())(childScope);
-                scope._screen.show();
+                iElement.html(template);
+                $compile(iElement.contents())(childScope);
+                screen.transitionIn();
+                scope.displaying = true;
+                blockScope.screenHeight = scope.height;
+              } else if(scope.displaying && newval != id){
+                screen.transitionOut();
+                scope.displaying = false;
               }
             });
-            
-            block.scope.$on("clearContent", function(event){
+            scope.$watch( function(){ return $(iElement).height(); },
+                          function(newval){ 
+                            scope.height = newval;
+                          } ); 
+            scope.$watch("height", function (newval) {
+              if(scope.displaying) blockScope.screenHeight = newval;
+            });
+            scope.$on("transitionedOut", function(){
+             clearContent(); 
+            })
+            // 
+            // init
+            screen.init();
+            // 
+            // private
+            function clearContent(){
               if (childScope) {
                 childScope.$destroy();
                 childScope = null;
               }
               iElement.html('');
-            });
-            
-            scope.$watch(function(){
-                return $(element).height();
-              },
-              function(newval, oldval){
-                block.screenHeight(newval);
-              });
-        }}
+            };
+          }
+        }
       } 
     }])
-    // // .directive('beSlidey', function(){
-    //   return {
-    //     require: ["?aLayout", "?aBlock", "?aScreen"],
-    //     link:function (scope, element, attrs, controllers) {
-    //       var props = (attrs["beSlidey"]).split(","),
-    //           controllers = controllers || [],
-    //           bindings = {
-    //             x: "slidey-x",
-    //             y: "slidey-y",
-    //             width: "slidey-width",
-    //             height: "slidey-height",
-    //             opacity: "slidey-opacity"
-    //           };
-    //       angular.forEach(controllers,function(controller){
-    //         if(controller == undefined) return;
-    //         controller.transition.addSuite(SlideyTransitionSuite);
-    //         angular.forEach(props, function(val){
-    //           if(bindings.hasOwnProperty(val)){
-    //             controller.transition.bind(val, bindings[val]);
-    //           }
-    //         });
-    //       });
-    //       
-    //       function SlideyTransitionSuite () {
-    //         var props = {};
-    //          this.register("slidey-x", function (newval, oldval) {
-    //            newval = !isNaN(newval) ? newval.toString() + "px" : newval;
-    //            props["left"] = newval;
-    //          })
-    // 
-    //          this.register("slidey-y", function (newval, oldval) {
-    //            newval = !isNaN(newval) ? newval.toString() + "px" : newval;
-    //            props["top"] = newval;
-    //          })
-    // 
-    //          this.register("slidey-width", function (newval, oldval) {
-    //            newval = !isNaN(newval) ? newval.toString() + "px" : newval;
-    //            props["width"] = newval;
-    //          })
-    // 
-    //          this.register("slidey-height", function (newval, oldval) {
-    //            newval = !isNaN(newval) ? newval.toString() + "px" : newval;
-    //            props["height"] = newval;
-    //          })
-    // 
-    //          this.register("slidey-opacity", function (newval, oldval) {
-    //            if(isNaN(newval)) return;
-    //            props["opacity"] = newval;
-    //          })
-    // 
-    //          this.fire = function(element, config){
-    //            var dur = config["duration"] || 300,
-    //                onComplete = config["slideyComplete"] || angular.noop;
-    //            $(element).animate(props, dur, onComplete);
-    //            props = {};
-    //          }
-    //         
-    //       }
-    //     } 
-    //   }
-    // });
+    /**
+     * Be Slidey directive
+     * 
+     */
+    .directive('beSlidey', function(){
+      return {
+        require: ["?aLayout", "?aBlock", "?aScreen"],
+        //////////////
+        // LINK
+        link:function (scope, element, attrs, controllers) {
+          // properties
+          var props = (attrs["beSlidey"]).split(","),
+              controllers = controllers || [],
+              bindings = {
+                x: "slidey-x",
+                y: "slidey-y",
+                width: "slidey-width",
+                height: "slidey-height",
+                opacity: "slidey-opacity"
+              };
+          angular.forEach(controllers,function(controller){
+            if(controller == undefined) return;
+            controller.transition.addSuite(BeSlideyTransitionSuite); // see layout.js
+            angular.forEach(props, function(val){
+              if(bindings.hasOwnProperty(val)){
+                controller.transition.bind(val, bindings[val]);
+              }
+            });
+          });
+        } 
+      }
+    });
     
     
