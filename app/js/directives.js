@@ -17,7 +17,6 @@ angular.module('myApp.directives', [])
         //////////////////
         // LINK
         link:function(scope, iElement, iAttrs, ctrl){
-          //////
           // init
           ctrl.init();
         }
@@ -41,22 +40,9 @@ angular.module('myApp.directives', [])
         link:function(scope, iElement, iAttrs, controllers){
           // properties
           var layout = controllers[0],
-              block = controllers[1];
-          //
-          // Watchers and Listeners
-          //
-          scope.$watch("screenHeight", block.screenHeightUpdate);
-          scope.$watch("displayingScreen()", function(newval){
-            if(!newval){
-              scope.screenHeight = 0;
-            }
-          })
-          // 
+              block = controllers[1],
+              name = scope.name = layout.addChild(scope, iAttrs.withName);
           // init
-          layout.addBlock(scope);
-          scope.triggerReflow = function(){
-            layout.reflow();
-          }
           block.init();
         }
       } 
@@ -82,38 +68,33 @@ angular.module('myApp.directives', [])
             // properties
             var screen = controllers[1],
                 block = controllers[0],
+                screenScope = scope._screen,
                 blockScope = scope._block = block.scope,
-                id = scope._screen.id = block.registerScreen(iAttrs.withName),
+                name = screenScope.name = block.addChild(screenScope, iAttrs.withName),
                 childScope;
             //
             // Watchers and Listeners
-            //
-            blockScope.$watch("currentScreen", function(newval, oldval){
-              if(!scope.displaying && newval == id) {
-                if(childScope){
-                  childScope.$destroy();
-                }
-                childScope = scope.$new();
-                iElement.html(template);
-                $compile(iElement.contents())(childScope);
-                screen.transitionIn();
-                scope.displaying = true;
-                blockScope.screenHeight = scope.height;
-              } else if(scope.displaying && newval != id){
-                screen.transitionOut();
-                scope.displaying = false;
-              }
-            });
-            scope.$watch( function(){ return $(iElement).height(); },
+            screenScope.$watch("displaying", function(newval, oldval){
+                              if(newval == oldval) return;
+                              if(newval) {
+                                if(childScope){
+                                  childScope.$destroy();
+                                }
+                                childScope = scope.$new();
+                                iElement.html(template);
+                                $compile(iElement.contents())(childScope);
+                                screen.transitionIn();
+                              } else {
+                                screen.transitionOut();
+                              }
+                            });
+            screenScope.$watch( function(){ return $(iElement).height(); },
                           function(newval){ 
-                            scope.height = newval;
-                          } ); 
-            scope.$watch("height", function (newval) {
-              if(scope.displaying) blockScope.screenHeight = newval;
-            });
+                            screenScope.height = newval;
+                          } );
             scope.$on("transitionedOut", function(){
-             clearContent(); 
-            })
+              clearContent(); 
+            });
             // 
             // init
             screen.init();
@@ -150,6 +131,7 @@ angular.module('myApp.directives', [])
                 height: "slidey-height",
                 opacity: "slidey-opacity"
               };
+          // init
           angular.forEach(controllers,function(controller){
             if(controller == undefined) return;
             controller.transition.addSuite(BeSlideyTransitionSuite); // see layout.js

@@ -1,7 +1,7 @@
 'use strict';
 
 /* Jasmine Specs for Layout controllers */ 
-
+/*//
 describe("layout component", function() {
   var scope,
       element,
@@ -341,3 +341,4 @@ describe("Transition Suites", function() {
     
   });
 });
+//*/

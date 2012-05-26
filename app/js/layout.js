@@ -10,9 +10,7 @@ function LayoutDirectiveCtrl ($scope, $element, $attrs, transition, augmentContr
   var self = this,
       trans = this.transition = transition($scope, $element),
       extCtrl = $attrs["withController"],
-      locals,
-      triggered = false,
-      flowFunc;
+      locals;
   
   trans.state.config("init", {height: 0});
   trans.bind("height", "css-height");
@@ -22,16 +20,11 @@ function LayoutDirectiveCtrl ($scope, $element, $attrs, transition, augmentContr
   
   $scope.blocks = [];
   
-  ////////////////
-  // Ctrl API
-  this.addBlock = function(block){
-    $scope.blocks.push(block);
-  }
   
   /**
-   * Get the default reflow function
+   * The default reflow layout function factory
    */
-  this.getDefaultReflow = function(){
+  this.defaultLayout = function(){
     return function (blocks, scope) {
       var pos = 0,
           width = 0;
@@ -46,43 +39,15 @@ function LayoutDirectiveCtrl ($scope, $element, $attrs, transition, augmentContr
   }
   
   /**
-   * Set the function that will be responsible for carrying out the reflow.
-   * 
-   * Here is the signature: function(block_scopes_array, layout_scope){...}
-   * 
-   * It must position each block and set the dimensions of the layout scope
-   */
-  this.setReflow = function(func){
-    flowFunc = func;
-  }
-  
-  /**
-   * Trigger the current reflow function to be called
-   */
-  this.reflow = function(){
-    if(!triggered){
-      $scope.$evalAsync(function(){
-        flowFunc($scope.blocks, $scope);
-        triggered = false;
-      });
-      triggered = true;
-    }
-  }
-  
-  /**
    * Initialize the contorller, called by the linking function
    */
   this.init = function(){  
     trans.state("init");
-    self.setReflow(self.getDefaultReflow());
   }
   
-  this._super = {
-    getDefaultReflow: self.getDefaultReflow,
-    setReflow: self.setReflow,
-    reflow: self.reflow,
-    addBlock: self.addBlock
-  }
+  this._super = angular.extend(this._super||{}, {
+    defaultLayout: self.defaultLayout
+  });
   
   //////////
   // augment controller
@@ -106,10 +71,10 @@ function BlockDirectiveCtrl ($scope, $element, $attrs, transition, augmentContro
   var self = this,
       trans = this.transition = transition($scope, $element),
       extCtrl = $attrs["withController"],
-      locals,
-      reflowWatchExprs = {};
+      locals;
   
   $element.css("width","100%");
+  $element.css("overflow","hidden");
   $element.css("position","absolute");
   trans.state.config("init", {height: 0});    
   trans.state.config("hide", {height: 0});    
@@ -123,20 +88,51 @@ function BlockDirectiveCtrl ($scope, $element, $attrs, transition, augmentContro
   /**
    * the id of the currentScreen
    */
-  $scope.currentScreen = '';
-  
-  /**
-   * List of registerded screen ids
-   */
-  $scope.screens = [];
+  $scope.currentScreen = null;
   
   /**
    * Computed Boolean to check if a screen is currently being displayed
    * @returns {boolean} 
    */
   $scope.displayingScreen = function(){
-    return $scope.screens.indexOf($scope.currentScreen) > -1;
+    return $scope.children.indexOf($scope.currentScreen) > -1;
   }
+  
+  /**
+   * Display a specified screen, speficied by name or scope
+   * 
+   * If the value passed is invalid, the new screen will be null
+   * 
+   * If the new screen and the current screen are equal then nothing will happen
+   * 
+   * @param {string|angular.ng.$rootScope.Scope} screen Screen scope or screen name of screen to be selected
+   * @event screenChange Broadcasts event from the scope if the screen is changed
+   */
+  $scope.showScreen = function(screen){
+    var cur = $scope.currentScreen,
+        neu = angular.isString(screen) ? $scope.childrenByName[screen] : screen;
+    if(cur == neu) return;
+    $scope.currentScreen = neu;
+    $scope.$broadcast("screenChange", screen && screen.name);
+  }
+  
+  
+  /**
+   * Hide a specified screen if its the currentScreen, speficied by name or scope
+   * 
+   * If the value passed is invalid, or the screen is not the current screen, nothing will happen
+   * 
+   * @param {string|angular.ng.$rootScope.Scope} screen Screen scope or screen name of screen to be deselected
+   * @event screenChange Broadcasts event from the scope if the screen is changed
+   */
+  $scope.hideScreen = function(screen){
+    var screen = angular.isString(screen) ? $scope.childrenByName[screen] : screen;
+    if(screen && $scope.currentScreen == screen){
+      $scope.currentScreen = null;
+      $scope.$broadcast("screenChange");
+    }
+  }
+  
   
   /**
    * Show this block
@@ -156,59 +152,29 @@ function BlockDirectiveCtrl ($scope, $element, $attrs, transition, augmentContro
     trans.state("hide");
   }
   
-  
-  ////////////////
-  // Ctrl API
-  // 
   /**
-   * get a unique screen id
-   * 
-   * @param {optional string} name Perferred id, it will be appended with '_#' if it's not unique
-   */
-  this.registerScreen = function(name){
-    if(!angular.isString(name)){
-      name = "screen"
-    }
-    var newN = name,
-    step = 0;
-    while($scope.screens.indexOf(newN) > -1){
-      newN = name+"_"+(++step);
-    }
-    $scope.screens.push(newN);
-    if($scope.screens.length == 1) $scope.currentScreen = newN;
-    return newN;
-  }
+    * The default reflow layout function factory method
+    */
+   this.defaultLayout = function(){
+     return function (screens, scope) {
+      var height = 0;
+       angular.forEach(blocks, function (screen, ind){
+         if(screen.displayed){
+           height = Math.max(height, screen.height);
+         }
+       });
+       scope.screenHeight = height;
+     }
+   }
   
-  // because screen needs it
+  // because the screen directive needs it
   this.scope = $scope;
   
   /**
-   * add a watch expression which will trigger a layout reflow
+   * watch listener attached to $scope.screenHeight property
    * 
-   * @param {string} expression A string expression which when it evaluates to a different number will trigger the reflow
+   * By default this sets the block height to match screen height
    */
-  this.addReflowWatcher = function(expression){
-    if(!angular.isString(expression)){
-      $exceptionHandler("Sorry this method can only watch expression strings for reflow!")
-    }
-    if(!reflowWatchExprs.hasOwnProperty(expression)){
-      reflowWatchExprs[expression] = $scope.$watch(expression, $scope.triggerReflow);
-    }
-  }
-  
-  /**
-   * remove a watch expression, this will call the un$watch function
-   * 
-   * @param {string} expression A string expression
-   */
-  this.removeReflowWatcher = function(expression){
-    var un$watcher = reflowWatchExprs[expression];
-    try{
-      un$watcher();
-    }catch(e){}
-    delete reflowWatchExprs[expression];
-  }
-  
   this.screenHeightUpdate = function(newval){
     $scope.height = newval;
   }
@@ -219,13 +185,13 @@ function BlockDirectiveCtrl ($scope, $element, $attrs, transition, augmentContro
   this.init = function(){
     trans.state("init");
     self.addReflowWatcher("height");
+    $scope.$watch("screenHeight", self.screenHeightUpdate);
   }
   
-  this._super = {
-    init: self.init,  
-    addReflowWatcher: self.addReflowWatcher,
-    removeReflowWatcher: self.removeReflowWatcher  
-  }
+  // make it easier to override these functions
+  this._super = angular.extend(this._super||{}, {
+    init: self.init
+  });
   
   //////////
   // augment controller
@@ -272,13 +238,13 @@ function ScreenDirectiveCtrl($scope, $element, $attrs, transition, augmentContro
   ////////////////
   // setup the screen api
   //
-  screen.show = function(id){
-    id = id || screen.id;
-    $scope._block.currentScreen = id;
+  screen.show = function(name){
+    var ref = name || screen;
+    scope._block.showScreen(ref);
   }
   
   screen.hide = function(){
-    $scope._block.currentScreen = null;
+    scope._block.hideScreen(screen);
   }
   ////////////////
   // Ctrl API 
@@ -304,16 +270,18 @@ function ScreenDirectiveCtrl($scope, $element, $attrs, transition, augmentContro
   // init function get called during linking phase
   this.init = function(){
     trans.state("init");
+    self.addReflowWatcher("displaying");
+    self.addReflowWatcher("height");
   }
   
   // make it easier to override these functions
-  this._super = {
+  this._super = angular.extend(this._super||{}, {
     init: self.init, 
     transitionIn: self.transitionIn,
     transitionInComplete: self.transitionInComplete,
     transitionOut: self.transitionOut,
     transitionOutComplete: self.transitionOutComplete
-  }
+  });
   
   //////////
   // augment controller
