@@ -18,20 +18,17 @@ function LayoutDirectiveCtrl ($scope, $element, $attrs, transition, augmentContr
   $element.css("width","100%");
   $element.css("position","relative");
   
-  $scope.blocks = [];
-  
   
   /**
    * The default reflow layout function factory
    */
   this.defaultLayout = function(){
-    return function (blocks, scope) {
-      var pos = 0,
+    return function (children, scope) {
+      var height = 0,
           width = 0;
-      angular.forEach(blocks, function (block, ind){
-        block.y = pos;
-        pos += block.height;
-        if(width < block.width) width = block.width;
+      angular.forEach(blocks, function (child){
+        height += child.calculateHeight();
+        if(width < block.calculateWidth()) width = block.calculateWidth();
       });
       scope.height = pos;
       scope.width = width;
@@ -43,21 +40,19 @@ function LayoutDirectiveCtrl ($scope, $element, $attrs, transition, augmentContr
    */
   this.init = function(){  
     trans.state("init");
+    // augment controller
+    if(angular.isString(extCtrl) && extCtrl.length > 0) {
+      locals = { $scope: $scope, 
+                 $element: $element, 
+                 $attrs: $attrs, 
+                 $trans: trans };
+      augmentController(extCtrl, this, locals);
+    }
   }
   
   this._super = angular.extend(this._super||{}, {
     defaultLayout: self.defaultLayout
   });
-  
-  //////////
-  // augment controller
-  if(angular.isString(extCtrl) && extCtrl.length > 0) {
-    locals = { $scope: $scope, 
-               $element: $element, 
-               $attrs: $attrs, 
-               $trans: trans };
-    augmentController(extCtrl, this, locals);
-  }
 }
 LayoutDirectiveCtrl.$inject = ["$scope", "$element", "$attrs", "transition", "augmentController"];
 
@@ -86,53 +81,22 @@ function BlockDirectiveCtrl ($scope, $element, $attrs, transition, augmentContro
   // Scope API
   // 
   /**
-   * the id of the currentScreen
+   * Show this block
+   * 
+   * triggers the show transition state
    */
-  $scope.currentScreen = null;
-  
-  /**
-   * Computed Boolean to check if a screen is currently being displayed
-   * @returns {boolean} 
-   */
-  $scope.displayingScreen = function(){
-    return $scope.children.indexOf($scope.currentScreen) > -1;
+  $scope.calculateHeight = function(){
+    return $scope.height;
   }
   
   /**
-   * Display a specified screen, speficied by name or scope
+   * Show this block
    * 
-   * If the value passed is invalid, the new screen will be null
-   * 
-   * If the new screen and the current screen are equal then nothing will happen
-   * 
-   * @param {string|angular.ng.$rootScope.Scope} screen Screen scope or screen name of screen to be selected
-   * @event screenChange Broadcasts event from the scope if the screen is changed
+   * triggers the show transition state
    */
-  $scope.showScreen = function(screen){
-    var cur = $scope.currentScreen,
-        neu = angular.isString(screen) ? $scope.childrenByName[screen] : screen;
-    if(cur == neu) return;
-    $scope.currentScreen = neu;
-    $scope.$broadcast("screenChange", screen && screen.name);
+  $scope.calculateWidth = function(){
+    return $scope.width;
   }
-  
-  
-  /**
-   * Hide a specified screen if its the currentScreen, speficied by name or scope
-   * 
-   * If the value passed is invalid, or the screen is not the current screen, nothing will happen
-   * 
-   * @param {string|angular.ng.$rootScope.Scope} screen Screen scope or screen name of screen to be deselected
-   * @event screenChange Broadcasts event from the scope if the screen is changed
-   */
-  $scope.hideScreen = function(screen){
-    var screen = angular.isString(screen) ? $scope.childrenByName[screen] : screen;
-    if(screen && $scope.currentScreen == screen){
-      $scope.currentScreen = null;
-      $scope.$broadcast("screenChange");
-    }
-  }
-  
   
   /**
    * Show this block
@@ -156,52 +120,41 @@ function BlockDirectiveCtrl ($scope, $element, $attrs, transition, augmentContro
     * The default reflow layout function factory method
     */
    this.defaultLayout = function(){
-     return function (screens, scope) {
-      var height = 0;
-       angular.forEach(blocks, function (screen, ind){
-         if(screen.displayed){
-           height = Math.max(height, screen.height);
-         }
+     return function (children, scope) {
+      var height = 0,
+          width = 0;
+       angular.forEach(children, function (child){
+         height = Math.max(height, child.calculateHeight());
+         width = Math.max(width, child.calculateWidth());
        });
-       scope.screenHeight = height;
+       scope.height = height;
+       scope.width = width;
      }
    }
   
-  // because the screen directive needs it
   this.scope = $scope;
-  
-  /**
-   * watch listener attached to $scope.screenHeight property
-   * 
-   * By default this sets the block height to match screen height
-   */
-  this.screenHeightUpdate = function(newval){
-    $scope.height = newval;
-  }
   
   /** 
    * init function get called during linking phase
    */
   this.init = function(){
     trans.state("init");
-    self.addReflowWatcher("height");
-    $scope.$watch("screenHeight", self.screenHeightUpdate);
+    self.addReflowWatcher("calculateHeight()");
+    self.addReflowWatcher("calculateWidth()");
+    // augment controller
+    if(angular.isString(extCtrl) && extCtrl.length > 0) {
+      locals = { $scope: $scope, 
+                 $element: $element, 
+                 $attrs: $attrs, 
+                 $trans: trans };
+      augmentController(extCtrl, this, locals);
+    }
   }
   
   // make it easier to override these functions
   this._super = angular.extend(this._super||{}, {
     init: self.init
   });
-  
-  //////////
-  // augment controller
-  if(angular.isString(extCtrl) && extCtrl.length > 0) {
-    locals = { $scope: $scope, 
-               $element: $element, 
-               $attrs: $attrs, 
-               $trans: trans };
-    augmentController(extCtrl, this, locals);
-  }
 }
 LayoutDirectiveCtrl.$inject = ["$scope", "$element", "$attrs", "transition", "augmentController", "$exceptionHandler"];
 
@@ -217,6 +170,8 @@ function ScreenDirectiveCtrl($scope, $element, $attrs, transition, augmentContro
       trans = this.transition = transition(screen, $element),
       locals,
       extCtrl = $attrs["withController"];
+  
+  this.setLayoutScope(screen);
   
   $element.css("width","100%");
   $element.css("display","block");
@@ -239,13 +194,28 @@ function ScreenDirectiveCtrl($scope, $element, $attrs, transition, augmentContro
   // setup the screen api
   //
   screen.show = function(name){
-    var ref = name || screen;
-    scope._block.showScreen(ref);
+    var name = name || screen.name;
+    screen._block.currentScreen = name;
   }
   
   screen.hide = function(){
-    scope._block.hideScreen(screen);
+    if(screen.displaying()){
+      screen._block.currentScreen = null;
+    }
   }
+  
+  screen.calculateHeight = function () {
+   return screen.height;
+  } 
+  
+  screen.calculateWidth = function () {
+   return screen.width;
+  }
+  
+  screen.displaying = function(){
+    return (screen._block.currentScreen == screen.name);
+  }
+  
   ////////////////
   // Ctrl API 
   // transition functions
@@ -271,7 +241,15 @@ function ScreenDirectiveCtrl($scope, $element, $attrs, transition, augmentContro
   this.init = function(){
     trans.state("init");
     self.addReflowWatcher("displaying");
-    self.addReflowWatcher("height");
+    self.addReflowWatcher("calculateHeight()");
+    // augment controller
+    if(angular.isString(extCtrl) && extCtrl.length > 0) {
+      locals = { $scope: $scope, 
+                 $element: $element, 
+                 $attrs: $attrs, 
+                 $trans: trans };
+      augmentController(extCtrl, this, locals);
+    }
   }
   
   // make it easier to override these functions
@@ -282,16 +260,6 @@ function ScreenDirectiveCtrl($scope, $element, $attrs, transition, augmentContro
     transitionOut: self.transitionOut,
     transitionOutComplete: self.transitionOutComplete
   });
-  
-  //////////
-  // augment controller
-  if(angular.isString(extCtrl) && extCtrl.length > 0) {
-    locals = { $scope: $scope, 
-               $element: $element, 
-               $attrs: $attrs, 
-               $trans: trans };
-    augmentController(extCtrl, this, locals);
-  }
 }
 ScreenDirectiveCtrl.$inject = ["$scope", "$element", "$attrs", "transition", "augmentController"]
 

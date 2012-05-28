@@ -42,7 +42,16 @@ angular.module('myApp.directives', [])
           var layout = controllers[0],
               block = controllers[1],
               name = scope.name = layout.addChild(scope, iAttrs.withName);
-          // init
+          // Init
+          // override the default layout reflow function
+          layout.layout(function(blocks, scope){
+            var height = 0;
+             angular.forEach(blocks, function (block){
+               block.y = height;
+               height += block.calculateHeight();
+             });
+             scope.height = height;
+          });
           block.init();
         }
       } 
@@ -74,7 +83,8 @@ angular.module('myApp.directives', [])
                 childScope;
             //
             // Watchers and Listeners
-            screenScope.$watch("displaying", function(newval, oldval){
+            // add/remove template 
+            screenScope.$watch("displaying()", function(newval, oldval){
                               if(newval == oldval) return;
                               if(newval) {
                                 if(childScope){
@@ -88,15 +98,30 @@ angular.module('myApp.directives', [])
                                 screen.transitionOut();
                               }
                             });
+            // watch the height of the element
             screenScope.$watch( function(){ return $(iElement).height(); },
                           function(newval){ 
                             screenScope.height = newval;
                           } );
+            // listen for transitionedOut event to dispose the screen contents
             scope.$on("transitionedOut", function(){
               clearContent(); 
             });
             // 
-            // init
+            // Init
+            // override the default block layout to handle screens
+            block.layout(function (screens, blockScope) {
+              var height = 0,
+                  width = 0;
+               angular.forEach(screens, function (screen){
+                 if(screen.displaying()){
+                   height = Math.max(height, screen.calculateHeight());
+                   width = Math.max(width, screen.calculateWidth());
+                 }
+               });
+               blockScope.height = height;
+               blockScope.width = width;
+             });
             screen.init();
             // 
             // private

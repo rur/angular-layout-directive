@@ -7,12 +7,8 @@
   function LayoutContainerBase ($scope, $exceptionHandler) {
     var self = this,
         layoutFn,
-        triggered = false;
-      
-    // children
-    $scope.children = [];
-    $scope.childrenByName = {};
-  
+        triggered = false,
+        layoutScope = $scope;
     /** 
      * Add child block to this container
      * 
@@ -21,11 +17,10 @@
      * @re
      */
     this.addChild = function (child, name){
-      // child.$on("reflow", self.layout);
-      name = validateAndTrim(name) || $scope.children.length.toString(); // keys can only be a string
-      if($scope.childrenByName.hasOwnProperty(name)) $exceptionHandler("Sorry but this Layout Container already has a child with the name '"+name+"'");
-      $scope.children.push(child);
-      $scope.childrenByName[name] = child;
+      name = validateAndTrim(name) || layoutScope.children.length.toString(); // keys can only be a string
+      if(layoutScope.childrenByName.hasOwnProperty(name)) $exceptionHandler("Sorry but this Layout Container already has a child with the name '"+name+"'");
+      layoutScope.children.push(child);
+      layoutScope.childrenByName[name] = child;
       return name;
     }
   
@@ -43,8 +38,8 @@
         layoutFn = setlayout;
       } else if(arguments.length == 0){
         if(!triggered){
-          $scope.$evalAsync(function(){
-                              layoutFn($scope.children, $scope);
+          layoutScope.$evalAsync(function(){
+                              layoutFn(layoutScope.children, layoutScope);
                               triggered = false;
                             });
           triggered = true;
@@ -61,6 +56,18 @@
        $exceptionHandler("You must implement a defaultLayout factory method which returns a layout function") 
     }
     
+    
+    /** 
+     * Set the scope to use as the layout scope.
+     * 
+     * This is useful if you want to have a separate scope object to control your layout
+     * 
+     * This is set to the injected local scope by default
+     */
+    this.setLayoutScope = function(scope){
+      layoutScope = scope;
+    }
+    
     /**
      * hash which stores the methods of this base class, 
      * makes it a little handier to extend methods in a sub class
@@ -73,7 +80,9 @@
     /** 
      * Init function called at some point after instanciation, before use
      */
-    this.init = function(){
+    this.init = function(){ 
+      layoutScope.children = [];
+      layoutScope.childrenByName = {};
       // defaultLayout() to be implmented by sub-class
       self.layout(self.defaultLayout());
     }
@@ -86,15 +95,17 @@
    * 
    * It add methods for trigger reflow on its parent based upon changes it layout scope.
    */
-  function LayoutBlockBase ($scope) {
+  function LayoutBlockBase ($scope, $exceptionHandler) {
     var self = this,
-        reflow$watchers = {};
+        reflow$watchers = {},
+        layoutScope = $scope;
     /**
      * Add an expression watcher to the current scope which will 'triggerReflow'
      */
-    this.setReflowWatcher = function(expression){
-      if(reflow$watchers.indexOf(expression) > -1) return;
-      reflow$watchers[expression] = $scope.$watch(expression, triggerReflow);
+    this.addReflowWatcher = function(expression){
+      if(!angular.isString(expression)) $exceptionHandler("You can only add a string expression as a reflow watcher");
+      if(reflow$watchers.hasOwnProperty(expression)) return;
+      reflow$watchers[expression] = layoutScope.$watch(expression, self.triggerReflow);
     }
   
     /**
@@ -112,9 +123,21 @@
      * this will emit a "reflow" event from the current scope
      */
     this.triggerReflow = function () {
-      $scope.$emit("reflow");
+      layoutScope.$emit("reflow");
     }
-  
+    
+    /** 
+     * Set the scope to use as the layout scope.
+     * 
+     * This is useful if you want to have a separate scope object to control your layout
+     * than for your directive. Usually one that is isolated.
+     * 
+     * This is set to the injected local scope by default
+     */
+    this.setLayoutScope = function(scope){
+      layoutScope = scope;
+    }
+    
     /**
      * hash which stores the methods of this base class, 
      * makes it a little handier to extend methods in a sub class
@@ -122,7 +145,8 @@
     this._super = angular.extend(this._super||{}, {
       setReflowWatcher: self.setReflowWatcher,
       removeReflowWatcher: self.removeReflowWatcher,
-      triggerReflow: self.triggerReflow
+      triggerReflow: self.triggerReflow,
+      setLayoutScope: self.setLayoutScope
     });
   
     /**
@@ -132,7 +156,7 @@
     
     }
   }
-  LayoutBlockBase.$inject = ["$scope"];
+  LayoutBlockBase.$inject = ["$scope", "$exceptionHandler"];
 
 
   function validateAndTrim (id) {
@@ -146,10 +170,11 @@
       // new joint constructor.   
       function C(){     
         var self = this,
-            inits = [];
-        base.apply(this, arguments.splice(0, Base.$inject.length));
+            inits = [],
+            args = Array.prototype.slice.call(arguments);
+        base.apply(this, args.slice(0, base.$inject.length));
         inits.push(this.init||angular.noop);
-        child.apply(this, arguments.splice(Base.$inject.length));   
+        child.apply(this, args.slice(base.$inject.length));   
         inits.push(this.init||angular.noop);
         this.init = function(){
           angular.forEach(inits, function(initFn){
