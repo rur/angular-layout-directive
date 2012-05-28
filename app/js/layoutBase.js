@@ -19,6 +19,7 @@
     this.addChild = function (child, name){
       name = validateAndTrim(name) || layoutScope.children.length.toString(); // keys can only be a string
       if(layoutScope.childrenByName.hasOwnProperty(name)) $exceptionHandler("Sorry but this Layout Container already has a child with the name '"+name+"'");
+      child.$on("reflow", self.layout);
       layoutScope.children.push(child);
       layoutScope.childrenByName[name] = child;
       return name;
@@ -93,7 +94,7 @@
   /**
    * Base class for a Layout block which is within a LayoutContainer
    * 
-   * It add methods for trigger reflow on its parent based upon changes it layout scope.
+   * It add methods for triggering reflow on its parent based upon changes in its layout scope.
    */
   function LayoutBlockBase ($scope, $exceptionHandler) {
     var self = this,
@@ -183,7 +184,7 @@
         }
       }; 
       function Inherit(){};   
-      Inherit.prototype = base.prototype; 
+      Inherit.prototype = angular.extend({},base.prototype, child.prototype); 
       C.prototype = new Inherit(); // instantiate it without calling constructor 
       // ask for everything.   
       C.$inject = [].concat(base.$inject).concat(child.$inject);   

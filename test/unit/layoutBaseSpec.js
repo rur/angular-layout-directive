@@ -3,6 +3,65 @@
 /* jasmine specs for layout base controlers */
 
 describe("Layout Base Controllers", function() {
+  describe("layout_component_utils", function() {
+    describe("extendController", function() {
+      var Ctrl1, Ctrl2;
+      beforeEach(module(function( $provide) {
+        $provide.value("d1", 123);
+        $provide.value("d2", 456);
+        $provide.value("d3", 789);
+      }));
+      it("should inject both controllers wiht dependencies", inject(function($injector) {
+        Ctrl1 = function Controller1 (d1,d2,d3) {
+          this.args1 = Array.prototype.slice.call(arguments);
+        }
+        Ctrl1.$inject = ["d1","d2","d3"];
+        Ctrl2 = function Controller2 (d3,d2,d1) {
+          this.args2 = Array.prototype.slice.call(arguments);
+        }
+        Ctrl2.$inject = ["d3","d2","d1"];
+        var ctrl = $injector.instantiate(layout_component_utils.extendController(Ctrl1, Ctrl2))
+        expect(ctrl.args1).toEqual([123,456,789]);
+        expect(ctrl.args2).toEqual([789,456,123]);
+      }));
+      it("should extend both init functions", inject(function($injector) {
+        var init1 = jasmine.createSpy("Ctrl1 Init"),
+            init2 = jasmine.createSpy("Ctrl2 Init"),
+            ctrl;
+        Ctrl1 = function () {
+          this.init = init1;
+        }
+        Ctrl1.$inject = [];
+        Ctrl2 = function () {
+          this.init = init2;
+        }
+        Ctrl2.$inject = [];
+        ctrl = $injector.instantiate(layout_component_utils.extendController(Ctrl1, Ctrl2));
+        ctrl.init();
+        expect(init1).toHaveBeenCalled();
+        expect(init2).toHaveBeenCalled();
+      }));
+      it("should pass on prototype methods", inject(function($injector) {
+        var proto1 = jasmine.createSpy("Ctrl1 Proto Method Spy"),
+            proto2 = jasmine.createSpy("Ctrl2 Proto Method Spy"),
+            proto1b = jasmine.createSpy("Ctrl1 Overridden Proto Method Spy"),
+            ctrl;
+        Ctrl1 = function () {}
+        Ctrl1.$inject = [];
+        Ctrl1.prototype.test1 = proto1;
+        Ctrl1.prototype.test2 = proto1b;
+        Ctrl2 = function () {}
+        Ctrl2.$inject = [];
+        Ctrl2.prototype.test2 = proto2;
+        ctrl = $injector.instantiate(layout_component_utils.extendController(Ctrl1, Ctrl2));
+        ctrl.test1();
+        expect(proto1).toHaveBeenCalled();
+        ctrl.test2();
+        expect(proto2).toHaveBeenCalled();
+        expect(proto1b).not.toHaveBeenCalled();
+      }));
+    });
+  });
   describe("LayoutContainerBase", function() {
     var ctrl,
         scope,
@@ -37,6 +96,16 @@ describe("Layout Base Controllers", function() {
       expect(scope.children).toEqual([child, child, child]);
       expect(function(){ctrl.addChild(child, name);}).toThrow("Sorry but this Layout Container already has a child with the name 'testChildName'");
       expect(scope.children.length).toEqual(3);
+    });
+    
+    it("should add a listener to child scopes for the 'reflow' event", function() {
+      var child = scope.$new(true),
+          onArgs;
+      spyOn(child, "$on");
+      ctrl.addChild(child);
+      onArgs = child.$on.argsForCall[0];
+      expect(onArgs[0]).toEqual("reflow");
+      expect(onArgs[1]).toEqual(ctrl.layout);
     });
     
     it("should set the default layout factory in the init function", function() {

@@ -1,5 +1,5 @@
 'use strict';
-
+(function(window){
 /**
  * LayoutDirectiveCtrl
  * 
@@ -26,11 +26,11 @@ function LayoutDirectiveCtrl ($scope, $element, $attrs, transition, augmentContr
     return function (children, scope) {
       var height = 0,
           width = 0;
-      angular.forEach(blocks, function (child){
+      angular.forEach(children, function (child){
         height += child.calculateHeight();
-        if(width < block.calculateWidth()) width = block.calculateWidth();
+        width = Math.max( width, child.calculateWidth());
       });
-      scope.height = pos;
+      scope.height = height;
       scope.width = width;
     }
   }
@@ -69,7 +69,8 @@ function BlockDirectiveCtrl ($scope, $element, $attrs, transition, augmentContro
       locals;
   
   $element.css("width","100%");
-  $element.css("overflow","hidden");
+  $element.css("overflow-x","hidden");
+  $element.css("overflow-y","hidden");
   $element.css("position","absolute");
   trans.state.config("init", {height: 0});    
   trans.state.config("hide", {height: 0});    
@@ -81,18 +82,14 @@ function BlockDirectiveCtrl ($scope, $element, $attrs, transition, augmentContro
   // Scope API
   // 
   /**
-   * Show this block
-   * 
-   * triggers the show transition state
+   * Calculate the height of this block, used by parent reflow function
    */
   $scope.calculateHeight = function(){
     return $scope.height;
   }
   
   /**
-   * Show this block
-   * 
-   * triggers the show transition state
+   * Calculate the width of this block, used by parent reflow function
    */
   $scope.calculateWidth = function(){
     return $scope.width;
@@ -124,8 +121,8 @@ function BlockDirectiveCtrl ($scope, $element, $attrs, transition, augmentContro
       var height = 0,
           width = 0;
        angular.forEach(children, function (child){
-         height = Math.max(height, child.calculateHeight());
-         width = Math.max(width, child.calculateWidth());
+         height = Math.max( height, child.calculateHeight());
+         width += child.calculateWidth();
        });
        scope.height = height;
        scope.width = width;
@@ -156,7 +153,7 @@ function BlockDirectiveCtrl ($scope, $element, $attrs, transition, augmentContro
     init: self.init
   });
 }
-LayoutDirectiveCtrl.$inject = ["$scope", "$element", "$attrs", "transition", "augmentController", "$exceptionHandler"];
+BlockDirectiveCtrl.$inject = ["$scope", "$element", "$attrs", "transition", "augmentController", "$exceptionHandler"];
 
 /**
  * ScreenDirectiveCtrl
@@ -188,19 +185,17 @@ function ScreenDirectiveCtrl($scope, $element, $attrs, transition, augmentContro
   });
   trans.bind({ hidden: "css-hidden" });
   
-  $scope.displaying = false;
-  
   ////////////////
   // setup the screen api
   //
   screen.show = function(name){
     var name = name || screen.name;
-    screen._block.currentScreen = name;
+    $scope._block.currentScreen = name;
   }
   
   screen.hide = function(){
     if(screen.displaying()){
-      screen._block.currentScreen = null;
+      $scope._block.currentScreen = null;
     }
   }
   
@@ -213,12 +208,14 @@ function ScreenDirectiveCtrl($scope, $element, $attrs, transition, augmentContro
   }
   
   screen.displaying = function(){
-    return (screen._block.currentScreen == screen.name);
+    return ($scope._block.currentScreen == screen.name);
   }
   
   ////////////////
   // Ctrl API 
   // transition functions
+  // nb: Notice that transition events are broadcast on the directive scope, not the isolated 
+  //     layout scope. This makes them available to your app controllers
   this.transitionIn = function(){
     $scope.$broadcast("transitioningIn");
     trans.state("show");
@@ -306,6 +303,10 @@ ScreenDirectiveCtrl.$inject = ["$scope", "$element", "$attrs", "transition", "au
       $(element).animate(props, dur, onComplete);
       props = {};
     }
-   
  }
-
+ // Extend controllers with base layout classes
+ window.LayoutDirectiveCtrl   = layout_component_utils.extendController(LayoutContainerBase, LayoutDirectiveCtrl);
+ window.BlockDirectiveCtrl    = layout_component_utils.extendController(LayoutContainerBlockBase, BlockDirectiveCtrl);
+ window.ScreenDirectiveCtrl   = layout_component_utils.extendController(LayoutBlockBase, ScreenDirectiveCtrl);
+ window.BeSlideyTransitionSuite = BeSlideyTransitionSuite;
+})(window);

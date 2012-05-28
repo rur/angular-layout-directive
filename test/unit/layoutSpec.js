@@ -1,7 +1,6 @@
 'use strict';
 
 /* Jasmine Specs for Layout controllers */ 
-/*//
 describe("layout component", function() {
   var scope,
       element,
@@ -33,6 +32,7 @@ describe("layout component", function() {
         augmentController: augmentCtrl
       }
       ctrl = injector.instantiate(LayoutDirectiveCtrl, locals);
+      ctrl.init();
     });
     
     it("should instanciate the LayoutDirectiveCtrl", function() {
@@ -66,66 +66,62 @@ describe("layout component", function() {
                                                   $attrs: attrs, 
                                                   $trans: transition });
     });
-    
-    it("should add a block scope", function() {
-      var block1 = {block: 1},
-          block2 = {block: 2};
-      ctrl.addBlock(block1);
-      expect(scope.blocks.indexOf(block1)).toEqual(0);
-      ctrl.addBlock(block2);
-      expect(scope.blocks.indexOf(block2)).toEqual(1);
-    });
+      
+      it("should add a child scope", function() {
+        var block1 = scope.$new(true),
+            block2 = scope.$new(true);
+        ctrl.addChild(block1);
+        expect(scope.children.indexOf(block1)).toEqual(0);
+        ctrl.addChild(block2);
+        expect(scope.children.indexOf(block2)).toEqual(1);
+      });
     
     it("should have a default reflow function which lays out a set of blocks one after another", function() {
-      var blocks = [],
-          reflow = ctrl.getDefaultReflow();
-      for (var i=0; i < 5; i++) {
-        var block = {height: 100, width: (10*(i+1)) };
-        blocks.push(block);
-      };
-      
-      reflow(blocks, scope);
-      angular.forEach(blocks, function(block, ind){
-        expect(block.y).toEqual(100*ind);
-      })
-      
-      expect(scope.height).toEqual(100*blocks.length);
-      expect(scope.width).toEqual(10*blocks.length);
-    });
-    
-    it("should set the reflow function and trigger a reflow", function() {
-      var blks = [],
-          newFlow = function(blocks, scope){
-            angular.forEach(blocks, function(block, ind){
-              block();
-            });
-            scope.abc = 123;
-          };
-      for (var i=0; i < 3; i++) {
-        blks.push(jasmine.createSpy("Block spy #"+ (i+1)));
-        ctrl.addBlock(blks[i]);
-      };
-      ctrl.setReflow(newFlow);
-      ctrl.reflow();
-      scope.$digest();
-      angular.forEach(blks, function(blk){
-        expect(blk).toHaveBeenCalled();
-      })
-      expect(scope.abc).toEqual(123);
-    });
-    it("should only trigger a reflow once despite multiple calls", function() {
-      var flowSpy = jasmine.createSpy("Reflow Spy");
-      ctrl.setReflow(flowSpy);
-      ctrl.reflow();
-      ctrl.reflow();
-      ctrl.reflow();
-      scope.$digest();
-      scope.$digest();
-      expect(flowSpy.callCount).toEqual(1);
-    });
+       var blocks = [],
+           reflow = ctrl.defaultLayout();
+       for (var i=0; i < 5; i++) {
+         var block = jasmine.createSpyObj("Block Spy "+i, ["calculateWidth", "calculateHeight"]);
+         block.calculateWidth.andReturn((i+1)*10);
+         block.calculateHeight.andReturn(100);
+         blocks.push(block);
+       };
+       reflow(blocks, scope);
+       expect(scope.height).toEqual(100*blocks.length);
+       expect(scope.width).toEqual(10*blocks.length);
+     });
+         
+     it("should set the layout function", function() {
+        var blks = [],
+            newFlow = function(blocks, scope){
+              angular.forEach(blocks, function(block, ind){
+                block.height = 123;
+              });
+              scope.abc = 123;
+            };
+        for (var i=0; i < 3; i++) {
+          blks.push(scope.$new(true));
+          ctrl.addChild(blks[i]);
+        };
+        ctrl.layout(newFlow);
+        ctrl.layout();
+        scope.$digest();
+        angular.forEach(blks, function(blk){
+          expect(blk.height).toEqual(123)
+        })
+        expect(scope.abc).toEqual(123);
+      });
+     it("should only trigger a reflow once despite multiple calls", function() {
+       var flowSpy = jasmine.createSpy("Reflow Spy");
+       ctrl.layout(flowSpy);
+       ctrl.layout();
+       ctrl.layout();
+       ctrl.layout();
+       scope.$digest();
+       scope.$digest();
+       expect(flowSpy.callCount).toEqual(1);
+     });
   });
-  
-  
+
   describe("BlockDirectiveCtrl", function() {
     var ctrl, reflowSpy;
     beforeEach(function() {
@@ -136,10 +132,10 @@ describe("layout component", function() {
         transition: transService,
         augmentController: augmentCtrl
       }
-      scope["triggerReflow"] = reflowSpy = jasmine.createSpy("Trigger Reflow Spy");
       ctrl = injector.instantiate(BlockDirectiveCtrl, locals);
+      ctrl.init();
     });
-    
+  
     it("should instanciate the BlockDirectiveCtrl", function() {
       expect(ctrl).not.toBeNull();
       expect(ctrl).toBeDefined();
@@ -148,7 +144,7 @@ describe("layout component", function() {
     it("should provide access to the scope through a scope property", function() {
       expect(ctrl.scope).toEqual(scope);
     });
-    
+      
     it("should create and configure the transition", function() {
       expect(transService).toHaveBeenCalledWith(scope, element);
       expect(ctrl.transition).toEqual(transition);
@@ -157,7 +153,7 @@ describe("layout component", function() {
                                                      y: "css-y", 
                                                      opacity: "css-opacity" });
     });
-    
+      
     it("should set the required css formatting", function() {
       // hack to get IE7 to play nice
       var el,
@@ -170,76 +166,82 @@ describe("layout component", function() {
     });
     
     it("should augment the controller", function() {
-      expect(augmentCtrl).toHaveBeenCalledWith( "SomeController",
-                                                ctrl,
-                                                { $scope: scope, 
-                                                  $element: element, 
-                                                  $attrs: attrs, 
-                                                  $trans: transition });
+     expect(augmentCtrl).toHaveBeenCalledWith( "SomeController",
+                                               ctrl,
+                                               { $scope: scope, 
+                                                 $element: element, 
+                                                 $attrs: attrs, 
+                                                 $trans: transition });
     });
     
-    it("should register a screen id returning a unique key", function() {
-       var id = ctrl.registerScreen();
-       expect(id).not.toBeNull();
-       expect(id).toBeDefined();
-       expect(scope.screens.indexOf(id)).toEqual(0);
-       id = ctrl.registerScreen("abc");
-       expect(scope.screens.indexOf(id)).toEqual(1);
-       id = ctrl.registerScreen("abc");
-       expect(scope.screens.indexOf(id)).toEqual(2);
-       id = ctrl.registerScreen();
-       expect(id).toEqual("screen_1");
-       expect(scope.screens.indexOf(id)).toEqual(3);
-       id = ctrl.registerScreen("abc");
-       expect(id).toEqual("abc_2");
-     });
-    
-    it("should set the currentScreen to the first registered", function() {
-       var id = ctrl.registerScreen();
-       expect(scope.currentScreen).toEqual(id);
-       ctrl.registerScreen();
-       expect(scope.currentScreen).toEqual(id);
-     });
-    
-    it("should add a displayingScreen computed boolean to the scope", function() {
-      expect(scope.displayingScreen()).toBeFalsy();
-      ctrl.registerScreen();
-      expect(scope.displayingScreen()).toBeTruthy();
+    it("should add a child returning an id", function() {
+      var child = scope.$new(true),
+          id;
+      id = ctrl.addChild(child);
+      expect(id).toEqual("0");
+      expect(scope.children.indexOf(child)).toEqual(0);
+      child = scope.$new(true);
+      id = ctrl.addChild(child, "testID");
+      expect(id).toEqual("testID");
+      expect(scope.children.indexOf(child)).toEqual(1);
+      expect(scope.childrenByName[id]).toEqual(child);
     });
-    
+
     it("should add and remove a reflow watcher", function() {
+      expect(function(){ctrl.addReflowWatcher()}).toThrow("You can only add a string expression as a reflow watcher");
+      spyOn(ctrl, "triggerReflow");
       ctrl.addReflowWatcher("test");
       scope.$digest();
-      expect(reflowSpy).toHaveBeenCalled();
+      expect(ctrl.triggerReflow).toHaveBeenCalled();
       scope.$digest();
       scope.test = 123;
       scope.$digest();
-      expect(reflowSpy.callCount).toEqual(2);
+      expect(ctrl.triggerReflow.callCount).toEqual(2);
       // remove
       ctrl.removeReflowWatcher("test");
       scope.test = 456;
       scope.$digest();
-      expect(reflowSpy.callCount).toEqual(2);
+      expect(ctrl.triggerReflow.callCount).toEqual(2);
     });
     
-    it("should apply the screen height directly to the scope.height", function() {
-      ctrl.screenHeightUpdate(1234);
-      expect(scope.height).toEqual(1234);
+    it("should have a default layout function", function() {
+      var screens = [],
+           reflow = ctrl.defaultLayout();
+       for (var i=0; i < 5; i++) {
+         var screen = jasmine.createSpyObj("screen Spy "+i, ["calculateWidth", "calculateHeight"]);
+         screen.calculateWidth.andReturn(100);
+         screen.calculateHeight.andReturn((i+1)*10);
+         screens.push(screen);
+       };
+       reflow(screens, scope);
+       expect(scope.width).toEqual(100*screens.length);
+       expect(scope.height).toEqual(10*screens.length);
     });
     
     it("should initialize setting the init transition state and the height reflow watcher", function() {
       spyOn(ctrl, "addReflowWatcher");
       ctrl.init();
       expect(transition.state).toHaveBeenCalledWith("init");
-      expect(ctrl.addReflowWatcher).toHaveBeenCalledWith("height");
+      expect(ctrl.addReflowWatcher).toHaveBeenCalledWith("calculateHeight()");
+      expect(ctrl.addReflowWatcher).toHaveBeenCalledWith("calculateWidth()");
+    });
+    
+    it("should add methods to the scope", function() {
+      scope.show();
+      expect(transition.state).toHaveBeenCalledWith("show");
+      scope.hide();
+      expect(transition.state).toHaveBeenCalledWith("hide");
+      scope.height = 100;
+      scope.width = 200;
+      expect(scope.calculateHeight()).toEqual(100);
+      expect(scope.calculateWidth()).toEqual(200);
     });
   });
-  
   describe("ScreenDirectiveCtrl", function() {
-    var ctrl, _screen, _block, id;
+    var ctrl, _screen, _block, name;
     beforeEach(function() {
       _screen = scope.$new(true);
-      _screen.id = id = "testScreenID";
+      _screen.name = name = "testScreenID";
       _screen.height = 300;
       // block = jasmine.createSpyObj("Block Controller Spy", ["showScreen", "screenHeight"]);
       scope._block = _block = scope.$new(true);
@@ -252,6 +254,7 @@ describe("layout component", function() {
       }
       spyOn(scope, "$new").andReturn(_screen);
       ctrl = injector.instantiate(ScreenDirectiveCtrl, locals);
+      ctrl.init();
     });
     
     it("should instanciate the ScreenDirectiveCtrl", function() {
@@ -308,7 +311,7 @@ describe("layout component", function() {
     it("should add a show method to the screen api", function() {
       expect(angular.isFunction(scope._screen.show)).toBeTruthy();
       _screen.show();
-      expect(_block.currentScreen).toEqual(id)
+      expect(_block.currentScreen).toEqual(name)
       _screen.show("someOtherID");
       expect(_block.currentScreen).toEqual("someOtherID");
     });
@@ -316,7 +319,7 @@ describe("layout component", function() {
     it("should add a hide method to the screen api", function() {
       expect(angular.isFunction(scope._screen.hide)).toBeTruthy();
       _screen.show();
-      expect(_block.currentScreen).toEqual(id)
+      expect(_block.currentScreen).toEqual(name)
       _screen.hide();
       expect(_block.currentScreen).toBeNull();
     });
@@ -341,4 +344,3 @@ describe("Transition Suites", function() {
     
   });
 });
-//*/

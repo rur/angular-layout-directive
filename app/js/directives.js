@@ -154,7 +154,9 @@ angular.module('myApp.directives', [])
                 y: "slidey-y",
                 width: "slidey-width",
                 height: "slidey-height",
-                opacity: "slidey-opacity"
+                opacity: "slidey-opacity",
+                "hidden[height]": "slidey-hide-height",
+                "hidden[fade]": "slidey-hide-fade"
               };
           // init
           angular.forEach(controllers,function(controller){
@@ -162,7 +164,8 @@ angular.module('myApp.directives', [])
             controller.transition.addSuite(BeSlideyTransitionSuite); // see layout.js
             angular.forEach(props, function(val){
               if(bindings.hasOwnProperty(val)){
-                controller.transition.bind(val, bindings[val]);
+                var scopeProp = val.replace(/\[.*\]/, "");
+                controller.transition.bind(scopeProp, bindings[val]);
               }
             });
           });
