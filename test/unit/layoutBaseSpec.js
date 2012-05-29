@@ -65,17 +65,14 @@ describe("Layout Base Controllers", function() {
   describe("LayoutContainerBase", function() {
     var ctrl,
         scope,
-        injector,
-        defaultLayout;
+        injector;
     beforeEach(inject(function($rootScope, $injector) {
-      defaultLayout = jasmine.createSpy("Default Layout Spy");
       scope = $rootScope.$new();
       injector = $injector;
       var locals = {
         $scope: scope
       }
       ctrl = injector.instantiate(LayoutContainerBase, locals);
-      ctrl.defaultLayout = function(){return defaultLayout};
       ctrl.init();
     }));
     it("should instanciate LayoutContainerBase", function() {
@@ -91,7 +88,7 @@ describe("Layout Base Controllers", function() {
       var child = scope.$new(true), // isolated scope
           name = "testChildName";
       expect(ctrl.addChild(child, name)).toEqual(name);
-      expect(ctrl.addChild(child)).toEqual("1");
+      expect(ctrl.addChild(child)).toEqual("child_2");
       expect(ctrl.addChild(child, " test ")).toEqual("test");
       expect(scope.children).toEqual([child, child, child]);
       expect(function(){ctrl.addChild(child, name);}).toThrow("Sorry but this Layout Container already has a child with the name 'testChildName'");
@@ -103,15 +100,11 @@ describe("Layout Base Controllers", function() {
           onArgs;
       spyOn(child, "$on");
       ctrl.addChild(child);
+      spyOn(ctrl, "layout");
       onArgs = child.$on.argsForCall[0];
       expect(onArgs[0]).toEqual("reflow");
-      expect(onArgs[1]).toEqual(ctrl.layout);
-    });
-    
-    it("should set the default layout factory in the init function", function() {
-      ctrl.layout();
-      scope.$digest();
-      expect(defaultLayout).toHaveBeenCalled();
+      (onArgs[1])();
+      expect(ctrl.layout).toHaveBeenCalled();
     });
     
     it("should set and trigger the layout function", function() {
@@ -129,14 +122,6 @@ describe("Layout Base Controllers", function() {
       expect(ctrl._super.layout).toEqual(ctrl.layout);
     });
     
-    it("should call the default layout factory and assign it to layout in the init function", function() {
-      var defaultLayoutSpy = jasmine.createSpy("Default layout spy");
-      spyOn(ctrl, "defaultLayout").andReturn(defaultLayoutSpy);
-      ctrl.init();
-      ctrl.layout();
-      scope.$digest();
-      expect(defaultLayoutSpy).toHaveBeenCalledWith([], scope);
-    });
   });
   describe("LayoutBlockBase", function() {
     var ctrl,
@@ -200,7 +185,6 @@ describe("Layout Base Controllers", function() {
         $scope: scope
       }
       ctrl = injector.instantiate(LayoutContainerBlockBase, locals);
-      ctrl.defaultLayout = function(){return defaultLayout};
       ctrl.init();
     }));
     it("should instanciate LayoutContainerBlock", function() {
@@ -216,17 +200,11 @@ describe("Layout Base Controllers", function() {
       var child = scope.$new(true), // isolated scope
           name = "testChildName";
       expect(ctrl.addChild(child, name)).toEqual(name);
-      expect(ctrl.addChild(child)).toEqual("1");
+      expect(ctrl.addChild(child)).toEqual("child_2");
       expect(ctrl.addChild(child, " test ")).toEqual("test");
       expect(scope.children).toEqual([child, child, child]);
       expect(function(){ctrl.addChild(child, name);}).toThrow("Sorry but this Layout Container already has a child with the name 'testChildName'");
       expect(scope.children.length).toEqual(3);
-    });
-
-    it("should set the default layout factory in the init function", function() {
-      ctrl.layout();
-      scope.$digest();
-      expect(defaultLayout).toHaveBeenCalled();
     });
 
     it("should set and trigger the layout function", function() {
@@ -244,14 +222,6 @@ describe("Layout Base Controllers", function() {
       expect(ctrl._super.layout).toEqual(ctrl.layout);
     });
 
-    it("should call the default layout factory and assign it to layout in the init function", function() {
-      var defaultLayoutSpy = jasmine.createSpy("Default layout spy");
-      spyOn(ctrl, "defaultLayout").andReturn(defaultLayoutSpy);
-      ctrl.init();
-      ctrl.layout();
-      scope.$digest();
-      expect(defaultLayoutSpy).toHaveBeenCalledWith([], scope);
-    });
     it("should trigger a reflow event to be emitted on the scope", function() {
       spyOn(scope, "$emit");
       ctrl.triggerReflow();

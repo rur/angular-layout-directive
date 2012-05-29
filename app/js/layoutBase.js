@@ -8,7 +8,9 @@
     var self = this,
         layoutFn,
         triggered = false,
-        layoutScope = $scope;
+        layoutScope = $scope,
+        children = [],
+        childrenByName = {};
     /** 
      * Add child block to this container
      * 
@@ -17,11 +19,11 @@
      * @re
      */
     this.addChild = function (child, name){
-      name = validateAndTrim(name) || layoutScope.children.length.toString(); // keys can only be a string
-      if(layoutScope.childrenByName.hasOwnProperty(name)) $exceptionHandler("Sorry but this Layout Container already has a child with the name '"+name+"'");
-      child.$on("reflow", self.layout);
-      layoutScope.children.push(child);
-      layoutScope.childrenByName[name] = child;
+      name = validateAndTrim(name) || "child_"+(children.length+1).toString(); // keys can only be a string
+      if(childrenByName.hasOwnProperty(name)) $exceptionHandler("Sorry but this Layout Container already has a child with the name '"+name+"'");
+      child.$on("reflow", onChildReflow);
+      children.push(child);
+      childrenByName[name] = child;
       return name;
     }
   
@@ -40,7 +42,7 @@
       } else if(arguments.length == 0){
         if(!triggered){
           layoutScope.$evalAsync(function(){
-                              layoutFn(layoutScope.children, layoutScope);
+                              layoutFn(children, layoutScope);
                               triggered = false;
                             });
           triggered = true;
@@ -54,7 +56,7 @@
      * You must implement this in your subclass
      */
      this.defaultLayout = function(){ 
-       $exceptionHandler("You must implement a defaultLayout factory method which returns a layout function") 
+       return angular.noop;
     }
     
     
@@ -82,10 +84,16 @@
      * Init function called at some point after instanciation, before use
      */
     this.init = function(){ 
-      layoutScope.children = [];
-      layoutScope.childrenByName = {};
-      // defaultLayout() to be implmented by sub-class
-      self.layout(self.defaultLayout());
+      layoutScope.children = children;
+      layoutScope.childrenByName = childrenByName;
+    }
+    
+    // defaultLayout() to be implmented by sub-class
+    self.layout(self.defaultLayout());
+    
+    // private
+    function onChildReflow () {
+      self.layout();
     }
   }
 

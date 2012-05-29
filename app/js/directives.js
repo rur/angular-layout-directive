@@ -86,17 +86,7 @@ angular.module('myApp.directives', [])
             // add/remove template 
             screenScope.$watch("displaying()", function(newval, oldval){
                               if(newval == oldval) return;
-                              if(newval) {
-                                if(childScope){
-                                  childScope.$destroy();
-                                }
-                                childScope = scope.$new();
-                                iElement.html(template);
-                                $compile(iElement.contents())(childScope);
-                                screen.transitionIn();
-                              } else {
-                                screen.transitionOut();
-                              }
+                              toggleContent(newval)
                             });
             // watch the height of the element
             screenScope.$watch( function(){ return $(iElement).height(); },
@@ -123,8 +113,26 @@ angular.module('myApp.directives', [])
                blockScope.width = width;
              });
             screen.init();
+            // if this is first screen registered, show it
+            if(!blockScope.currentScreen) {
+              screenScope.show();
+              toggleContent(true);
+            }
             // 
             // private
+            function toggleContent (show) {
+              if(show) {
+                if(childScope){
+                  childScope.$destroy();
+                }
+                childScope = scope.$new();
+                iElement.html(template);
+                $compile(iElement.contents())(childScope);
+                screen.transitionIn();
+              } else {
+                screen.transitionOut();
+              }
+            }
             function clearContent(){
               if (childScope) {
                 childScope.$destroy();

@@ -68,6 +68,9 @@ function BlockDirectiveCtrl ($scope, $element, $attrs, transition, augmentContro
       extCtrl = $attrs["withController"],
       locals;
   
+  this.addReflowWatcher("calculateHeight()");
+  this.addReflowWatcher("calculateWidth()");
+  
   $element.css("width","100%");
   $element.css("overflow-x","hidden");
   $element.css("overflow-y","hidden");
@@ -136,8 +139,6 @@ function BlockDirectiveCtrl ($scope, $element, $attrs, transition, augmentContro
    */
   this.init = function(){
     trans.state("init");
-    self.addReflowWatcher("calculateHeight()");
-    self.addReflowWatcher("calculateWidth()");
     // augment controller
     if(angular.isString(extCtrl) && extCtrl.length > 0) {
       locals = { $scope: $scope, 
@@ -169,6 +170,8 @@ function ScreenDirectiveCtrl($scope, $element, $attrs, transition, augmentContro
       extCtrl = $attrs["withController"];
   
   this.setLayoutScope(screen);
+  this.addReflowWatcher("displaying");
+  this.addReflowWatcher("calculateHeight()");
   
   $element.css("width","100%");
   $element.css("display","block");
@@ -237,8 +240,6 @@ function ScreenDirectiveCtrl($scope, $element, $attrs, transition, augmentContro
   // init function get called during linking phase
   this.init = function(){
     trans.state("init");
-    self.addReflowWatcher("displaying");
-    self.addReflowWatcher("calculateHeight()");
     // augment controller
     if(angular.isString(extCtrl) && extCtrl.length > 0) {
       locals = { $scope: $scope, 
@@ -299,8 +300,7 @@ ScreenDirectiveCtrl.$inject = ["$scope", "$element", "$attrs", "transition", "au
     this.fire = function(element, config){
       var dur = config && config["duration"] || 300,
           onComplete = config && config["onComplete"] || angular.noop;
-      $(element).stop();
-      $(element).animate(props, dur, onComplete);
+      $(element).animate(props, {duration: dur, queue: false}, onComplete);
       props = {};
     }
  }

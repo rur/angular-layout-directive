@@ -12,6 +12,7 @@
       <a-screen ng-controller="SubCtrl">
          <div>
             <p>Test = {{test}}</p>
+            <p>Screen height = {{_screen.calculateHeight()}}</p>
             <p><a ng-click="_screen.show('screen-2')">Show Screen 2</a></p>
             <p><a ng-click="_screen.hide()">Hide</a></p>
          </div>
@@ -49,6 +50,7 @@
   <script src="js/services.js"></script>
   <script src="js/controllers.js"></script>
   <script src="js/filters.js"></script>
+  <script src="js/layoutBase.js"></script>
   <script src="js/layout.js"></script>
   <script src="js/directives.js"></script>
 </body>

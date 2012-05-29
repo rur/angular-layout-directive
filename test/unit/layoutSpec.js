@@ -132,6 +132,7 @@ describe("layout component", function() {
         transition: transService,
         augmentController: augmentCtrl
       }
+      spyOn(scope, "$watch").andCallThrough();
       ctrl = injector.instantiate(BlockDirectiveCtrl, locals);
       ctrl.init();
     });
@@ -178,7 +179,7 @@ describe("layout component", function() {
       var child = scope.$new(true),
           id;
       id = ctrl.addChild(child);
-      expect(id).toEqual("0");
+      expect(id).toEqual("child_1");
       expect(scope.children.indexOf(child)).toEqual(0);
       child = scope.$new(true);
       id = ctrl.addChild(child, "testID");
@@ -219,11 +220,10 @@ describe("layout component", function() {
     });
     
     it("should initialize setting the init transition state and the height reflow watcher", function() {
-      spyOn(ctrl, "addReflowWatcher");
+      expect(scope.$watch.argsForCall[0][0]).toEqual("calculateHeight()");
+      expect(scope.$watch.argsForCall[1][0]).toEqual("calculateWidth()");
       ctrl.init();
       expect(transition.state).toHaveBeenCalledWith("init");
-      expect(ctrl.addReflowWatcher).toHaveBeenCalledWith("calculateHeight()");
-      expect(ctrl.addReflowWatcher).toHaveBeenCalledWith("calculateWidth()");
     });
     
     it("should add methods to the scope", function() {
