@@ -72,25 +72,25 @@ angular.module('myApp.services', [])
           defaultDisplay;
       
       this.register("css-x", function (newval, oldval) {
-        if( !(angular.isString(newval) || angular.isNumber(newval)) ) return false;
+        if( !isValidNumString(newval) ) return false;
         newval = !isNaN(newval) ? newval.toString() + "px" : newval;
         props["left"] = newval;
       })
       
       this.register("css-y", function (newval, oldval) {
-        if( !(angular.isString(newval) || angular.isNumber(newval)) ) return false;
+        if( !isValidNumString(newval) ) return false;
         newval = !isNaN(newval) ? newval.toString() + "px" : newval;
         props["top"] = newval;
       })
       
       this.register("css-width", function (newval, oldval) {
-        if( !(angular.isString(newval) || angular.isNumber(newval)) ) return false;
+        if( !isValidNumString(newval) ) return false;
         newval = !isNaN(newval) ? newval.toString() + "px" : newval;
         props["width"] = newval;
       })
             
       this.register("css-height", function (newval, oldval) {
-        if( !(angular.isString(newval) || angular.isNumber(newval)) ) return false;
+        if( !isValidNumString(newval) ) return false;
         newval = !isNaN(newval) ? newval.toString() + "px" : newval;
         props["height"] = newval;
       })
@@ -101,7 +101,7 @@ angular.module('myApp.services', [])
       
       this.register("css-opacity", function (newval, oldval) {
         var ieVal;
-        if(isNaN(newval)) return false;
+        if(!isValidNum(newval)) return false;
         props["opacity"] = newval;
         props["-moz-opacity"] = newval;
         ieVal = Math.round(newval*100);
@@ -123,6 +123,13 @@ angular.module('myApp.services', [])
         display = null;
         props = {};
         onComplete();
+      }
+      // utils
+      function isValidNumString (val) {
+        return (angular.isString(val) || isValidNum(val));
+      }
+      function isValidNum (val) {
+        return val && typeof val != "boolean" && !angular.isArray(val) && (angular.isNumber(val) || !isNaN(val)) ;
       }
     }
     
@@ -216,7 +223,7 @@ angular.module('myApp.services', [])
          *    tarnsition.state.configure("init", {x: 100, y: 200, width: "100%", height: "200px"}, {onComplete:func..});
          * 
          * @param {string} id The id of the new/existing state you want to configure
-         * @param {object} hash A key-value pair with corresponds to the scope properties and value you want applied 
+         * @param {object|Function} hash A key-value pair with corresponds to the scope properties and value you want applied. You can also pass a function, see #apply
          * @param {object} params A config hash which gets passed to the transition fire function
          */
         this.state.config = function (id, hash, params){
@@ -309,15 +316,26 @@ angular.module('myApp.services', [])
          * you can pass a configuration hash which will be available to all transition fire methods that
          * get triggered in this scope.$digest cycle. This is what Transition#state uses to apply the state to the scope
          * 
-         * @param {Object} props A hash of properties and their values that will be applied to the scope using scope[key] = value
+         * @param {Object|Function} props A hash of properties and their values that will be applied to the scope using scope[key] = value, 
+         *                          if a function is encountered it will be called. A function as a value will have its return value applied to the scope property
          * @param {Object} params A configuration hash which will be passed to all TransitionSuite#fire methods that get triggered
          */
         this.apply = function(props, params){
-          var prop;
-          for(prop in props){
-            scope[prop] = props[prop];
+          var prop,
+              value;
+          if(angular.isFunction(props)){
+            props.call(scope);
+          } else {
+            for(prop in props){
+              value = props[prop];
+              if(angular.isFunction(value)){
+                scope[prop] = value.call(scope);
+              } else {
+                scope[prop] = value;
+              }
+            }
+            fireParams = params || {};
           }
-          fireParams = params || {};
         }
         
         /**

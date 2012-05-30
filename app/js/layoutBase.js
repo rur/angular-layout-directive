@@ -3,6 +3,8 @@
    * Base class for a layout container.
    * 
    * It has methods to make managing and positioning child layout blocks easier and consistant
+   * 
+   * @constructor
    */
   function LayoutContainerBase ($scope, $exceptionHandler) {
     var self = this,
@@ -10,17 +12,26 @@
         triggered = false,
         layoutScope = $scope,
         children = [],
-        childrenByName = {};
+        childrenByName = {},
+        ids = [];
     /** 
      * Add child block to this container
      * 
      * @param {angular.ng.$rootScope.Scope} child This is the layout scope of a child element
-     * @param {string optional} name The name identifyer
-     * @re
+     * @param {string optional} name The name identifier
+     * @return {string} The name/id of the child
      */
     this.addChild = function (child, name){
-      name = validateAndTrim(name) || "child_"+(children.length+1).toString(); // keys can only be a string
-      if(childrenByName.hasOwnProperty(name)) $exceptionHandler("Sorry but this Layout Container already has a child with the name '"+name+"'");
+      // if a valid name is supplied it will throw an error for a duplicate, 
+      // otherwise it silently creates a new unique id
+      if((name = self.validateAndTrim(name))){
+        if( childrenByName.hasOwnProperty(name)) {
+          $exceptionHandler("Sorry but this Layout Container already has a child with the name '"+name+"'");
+        }
+      } else {
+        name = self.getUniqueID("child_"+(ids.length+1), ids);
+      }
+      ids.push(name);
       child.$on("reflow", onChildReflow);
       children.push(child);
       childrenByName[name] = child;
@@ -66,9 +77,47 @@
      * This is useful if you want to have a separate scope object to control your layout
      * 
      * This is set to the injected local scope by default
+     * 
+     * @param {angular.ng.$rootScope.Scope} scope The scope you want to use for layout
      */
     this.setLayoutScope = function(scope){
       layoutScope = scope;
+    }
+    
+    /**
+     * Utility function for obtaining a unique id from a specified array of ids
+     * 
+     * @param {string} name The perferred name, it will be incremented if it is a dup
+     * @param {array} collection The array of keys it needs to be unique within
+     * @param {string optional} prepend The string to use to prepend a generated id
+     * @return {string} an id which is unique within the collection received
+     */
+    this.getUniqueID = function(name, collection, prepend){
+      var step = 1, 
+          base = name;
+      if(!angular.isString(name = self.validateAndTrim(name))){
+        base = prepend;
+        name = base+(step++);
+      }
+      while(collection.indexOf(name) > -1){
+        name = base+(step++);
+      }
+      return name;
+    }
+    
+    /**
+     * Makes sure a value is valid as an key for a hash
+     * 
+     * It must be a string, and when trimmed, it must be longer than 0
+     * 
+     * @param {string} id The string to make sure if valid
+     * @return {string|boolean} If it is valid it will return a trimmed valid id, if validation failes it will return false
+     */
+    this.validateAndTrim = function (id) {
+      if( !angular.isString(id) ) return false;
+      id = id.replace(/^\s+|\s+$/g,"");
+      if( id.length == 0 ) return false;
+      return id;
     }
     
     /**
@@ -77,7 +126,10 @@
      */
      this._super = angular.extend(this._super||{}, {
        addChild: self.addChild,
-       layout: self.layout
+       layout: self.layout,
+       setLayoutScope: self.setLayoutScope, 
+       getUniqueID: self.getUniqueID,
+       validateAndTrim: self.validateAndTrim
      });
   
     /** 
@@ -103,6 +155,8 @@
    * Base class for a Layout block which is within a LayoutContainer
    * 
    * It add methods for triggering reflow on its parent based upon changes in its layout scope.
+   * 
+   * @constructor
    */
   function LayoutBlockBase ($scope, $exceptionHandler) {
     var self = this,
@@ -110,6 +164,8 @@
         layoutScope = $scope;
     /**
      * Add an expression watcher to the current scope which will 'triggerReflow'
+     * 
+     * @param {string} expression A string expression to evaluate agaisnt the scope to trigger reflow on parent
      */
     this.addReflowWatcher = function(expression){
       if(!angular.isString(expression)) $exceptionHandler("You can only add a string expression as a reflow watcher");
@@ -119,6 +175,8 @@
   
     /**
      * remove an added watcher expression
+     * 
+     * @param {string} expression The expression you wish to remove
      */
     this.removeReflowWatcher = function(expression){
       var un$watcher = reflow$watchers[expression];
@@ -142,6 +200,8 @@
      * than for your directive. Usually one that is isolated.
      * 
      * This is set to the injected local scope by default
+     * 
+     * @param {angular.ng.$rootScope.Scope} scope The scope you want to use for layout
      */
     this.setLayoutScope = function(scope){
       layoutScope = scope;
@@ -166,14 +226,6 @@
     }
   }
   LayoutBlockBase.$inject = ["$scope", "$exceptionHandler"];
-
-
-  function validateAndTrim (id) {
-    if( !angular.isString(id) ) return false;
-    id = id.replace(/^\s+|\s+$/g,"");
-    if( id.length == 0 ) return false;
-    return id;
-  }
 
   function extendLayoutController (base, child){ 
       // new joint constructor.   
@@ -203,6 +255,6 @@
   window.LayoutBlockBase = LayoutBlockBase;
   window.LayoutContainerBlockBase = extendLayoutController(LayoutContainerBase, LayoutBlockBase);
   window.layout_component_utils = {
-    extendController: extendLayoutController 
+    extendController: extendLayoutController,
   }
 })(window);

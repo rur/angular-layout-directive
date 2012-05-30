@@ -47,6 +47,10 @@ describe("layout component", function() {
       expect(transition.bind).toHaveBeenCalledWith("height", "css-height" );
     });
     
+    it("should provide access to the layout scope", function() {
+      expect(ctrl.layoutScope).toEqual(scope);
+    });
+    
     it("should set the required css formatting", function() {
       // hack to get IE7 to play nice
       var el,
@@ -142,8 +146,8 @@ describe("layout component", function() {
       expect(ctrl).toBeDefined();
     });
     
-    it("should provide access to the scope through a scope property", function() {
-      expect(ctrl.scope).toEqual(scope);
+    it("should provide access to its scope", function() {
+      expect(ctrl.layoutScope).toEqual(scope);
     });
       
     it("should create and configure the transition", function() {
@@ -255,6 +259,11 @@ describe("layout component", function() {
       spyOn(scope, "$new").andReturn(_screen);
       ctrl = injector.instantiate(ScreenDirectiveCtrl, locals);
       ctrl.init();
+      // // Custom matchers
+      // this matcher allows you to pass a function which is called on its matching argument
+      this.addMatchers({
+          toHaveBeenCalledWithAndTest: toHaveBeenCalledWithAndTest
+        });
     });
     
     it("should instanciate the ScreenDirectiveCtrl", function() {
@@ -263,23 +272,32 @@ describe("layout component", function() {
     });
     
     it("should create and configure the transitions", function() {
+      // setup
       var args;
+      spyOn(ctrl, "transitionInComplete");
+      spyOn(ctrl, "transitionOutComplete");
+      var checkOnComplete = function(args){
+        if( args && angular.isFunction(args["onComplete"])){
+          args["onComplete"]();
+          return true;
+        }
+        return false;
+      }
+      // assertions
       expect(transService).toHaveBeenCalledWith(_screen, element);
       expect(ctrl.transition).toEqual(transition);
       expect(transition.bind).toHaveBeenCalledWith({ hidden: "css-hidden" });
-      // transition state config
-      spyOn(ctrl, "transitionInComplete");
-      spyOn(ctrl, "transitionOutComplete");
-      args = transition.state.config.argsForCall;
-      expect(args[0]).toEqual(["init", {hidden: true}]);
-      expect((args[1]).slice(0,2)).toEqual(["show", {hidden: false}]);
-      expect((args[2]).slice(0,2)).toEqual(["hide", {hidden: true}]);
-      expect(ctrl.transitionInComplete).not.toHaveBeenCalled();
-      expect(ctrl.transitionOutComplete).not.toHaveBeenCalled();
-      (args[1][2]["onComplete"])();
+      expect(transition.state.config).toHaveBeenCalledWith("init", {hidden: true});
+      expect(transition.state.config)
+        .toHaveBeenCalledWithAndTest("show", {hidden: false}, checkOnComplete);
+      expect(transition.state.config)
+        .toHaveBeenCalledWithAndTest("hide", {hidden: true}, checkOnComplete);
       expect(ctrl.transitionInComplete).toHaveBeenCalled();
-      (args[2][2]["onComplete"])();
       expect(ctrl.transitionOutComplete).toHaveBeenCalled();
+    });
+    
+    it("should have a scope property with its layout scope", function() {
+      expect(ctrl.layoutScope).toEqual(_screen);
     });
     
     it("should set the required css formatting", function() {
@@ -338,9 +356,232 @@ describe("layout component", function() {
       expect(scope.$broadcast).toHaveBeenCalledWith("transitionedOut");
     });
   });
+  describe("OverlayDirectiveCtrl", function() {
+    var ctrl, _overlay, _parent, name;
+    beforeEach(function() {
+      _overlay = scope.$new(true);
+      _overlay.name = name = "testoverlayID";
+      scope._parent = _parent = scope.$new(true);
+      var locals = {
+        $scope: scope,
+        $element: element,
+        $attrs: attrs,  
+        transition: transService,
+        augmentController: augmentCtrl
+      }
+      spyOn(scope, "$new").andReturn(_overlay);
+      ctrl = injector.instantiate(OverlayDirectiveCtrl, locals);
+      ctrl.init();
+      // // Custom matchers
+      // this matcher allows you to pass a function which is called on its matching argument
+      this.addMatchers({
+          toHaveBeenCalledWithAndTest: toHaveBeenCalledWithAndTest
+        });
+    });
+    it("should instanciate OverlayDirectiveCtrl", function() {
+      expect(ctrl).not.toBeNull();
+      expect(ctrl).toBeDefined();
+    });
+    it("should create a new layout scope", function() {
+      expect(scope._overlay).toEqual(_overlay);
+    });
+    
+    it("should create and configure the transitions", function() {
+      // setup
+      var args;
+      spyOn(ctrl, "transitionInComplete");
+      spyOn(ctrl, "transitionOutComplete");
+      var checkOnComplete = function(args){
+        if( args && angular.isFunction(args["onComplete"])){
+          args["onComplete"]();
+          return true;
+        }
+        return false;
+      }
+      // assertions
+      expect(transService).toHaveBeenCalledWith(_overlay, element);
+      expect(ctrl.transition).toEqual(transition);
+      expect(transition.bind).toHaveBeenCalledWith({ hidden: "css-hidden",
+                                                     opacity: "css-opacity"});
+      expect(transition.state.config).toHaveBeenCalledWith("init", {hidden: true});
+      expect(transition.state.config)
+        .toHaveBeenCalledWithAndTest("show", {hidden: false}, checkOnComplete);
+      expect(transition.state.config)
+        .toHaveBeenCalledWithAndTest("hide", {hidden: true}, checkOnComplete);
+      expect(ctrl.transitionInComplete).toHaveBeenCalled();
+      expect(ctrl.transitionOutComplete).toHaveBeenCalled();
+    });
+    
+    it("should set the required css formatting", function() {
+      var el,
+          html;
+      el = angular.element(document.createElement("div"));
+      el.append(element);
+      html = el.html();
+      expect(html).toMatch(/width: 100%/i);
+      expect(html).toMatch(/height: 100%/i);
+      expect(html).toMatch(/z-index: 100/i);
+      expect(html).toMatch(/top: 0px/i);
+      expect(html).toMatch(/left: 0px/i);
+      expect(html).toMatch(/overflow-x: hidden/i);
+      expect(html).toMatch(/overflow-y: hidden/i);
+      expect(html).toMatch(/position: absolute/i);
+    });
+    it("should add a show method to the overlay layout scope", function() {
+      _overlay.show("test");
+      expect(_parent.currentOverlay).toEqual("test");
+      _overlay.show();
+      expect(_parent.currentOverlay).toEqual(name);
+    });
+    it("should add a hide method to the overlay layout scope", function() {
+      _overlay.show();
+      _overlay.hide();
+      expect(_parent.currentOverlay).toBeNull();
+    });
+    it("should add a displaying computed value to the overlay layout scope", function() {
+      expect(_overlay.displaying()).toBeFalsy();
+      _overlay.show();
+      expect(_overlay.displaying()).toBeTruthy();
+      _overlay.hide();
+      expect(_overlay.displaying()).toBeFalsy();
+      _overlay.show("test");
+      expect(_overlay.displaying("test")).toBeTruthy();
+      _overlay.hide();
+      expect(_overlay.displaying("test")).toBeFalsy();
+    });
+    it("should have transition functions which broadcast events", function() {
+      spyOn(scope, "$broadcast");
+      ctrl.transitionIn();
+      expect(transition.state).toHaveBeenCalledWith("show");
+      expect(scope.$broadcast).toHaveBeenCalledWith("transitioningIn");
+      ctrl.transitionInComplete();
+      expect(scope.$broadcast).toHaveBeenCalledWith("transitionedIn");
+      ctrl.transitionOut();
+      expect(transition.state).toHaveBeenCalledWith("hide");
+      expect(scope.$broadcast).toHaveBeenCalledWith("transitioningOut");
+      ctrl.transitionOutComplete();
+      expect(scope.$broadcast).toHaveBeenCalledWith("transitionedOut");
+    });
+    it("should have its layout scope as a property of the contorller instance", function() {
+      expect(ctrl.layoutScope).toEqual(_overlay);
+    });
+    it("should call transition init", function() {
+      expect(transition.state).toHaveBeenCalledWith("init");
+    });
+    
+    it("should augment the controller", function() {
+      expect(augmentCtrl).toHaveBeenCalledWith( "SomeController",
+                                                ctrl,
+                                                { $scope: scope, 
+                                                  $element: element, 
+                                                  $attrs: attrs, 
+                                                  $trans: transition });
+    });
+  });
 });
 describe("Transition Suites", function() {
   describe("SlideyTransitionSuite", function() {
-    
+    var suite, registerSpy, MockSuite, trans;
+    beforeEach(function() {
+      trans = {};
+      registerSpy = jasmine.createSpy("Register Spy").andCallFake(function(prop, func){
+        trans[prop] = func;
+      });
+      MockSuite = function () {
+        this.register = registerSpy;
+        BeSlideyTransitionSuite.apply(this);
+      }
+      // // Custom matchers
+      // this matcher allows you to pass a function which is called on its matching argument
+      this.addMatchers({
+          toHaveBeenCalledWithAndTest: toHaveBeenCalledWithAndTest
+        });
+    });
+    it("should register slidey transition properties", function() {
+      suite = new MockSuite();
+      expect(registerSpy).toHaveBeenCalledWithAndTest("slidey-x",function(val){ return angular.isFunction(val)});
+      expect(registerSpy).toHaveBeenCalledWithAndTest("slidey-y",function(val){ return angular.isFunction(val)});
+      expect(registerSpy).toHaveBeenCalledWithAndTest("slidey-width",function(val){ return angular.isFunction(val)});
+      expect(registerSpy).toHaveBeenCalledWithAndTest("slidey-height",function(val){ return angular.isFunction(val)});
+      expect(registerSpy).toHaveBeenCalledWithAndTest("slidey-opacity",function(val){ return angular.isFunction(val)});
+      // expect(registerSpy).toHaveBeenCalledWithAndTest("slidey-hidden",function(val){ return angular.isFunction(val)});
+    });
+    it("should refuse invalid values", function() {
+      suite = new MockSuite();
+      var allArgs = registerSpy.argsForCall;
+      angular.forEach(allArgs, function(args, key){
+        args[1](null);
+        args[1]({});
+        args[1]([]);
+        args[1](function(){});
+        args[1](undefined);
+        args[1](NaN);
+        args[1](true);
+        args[1](false);
+      });
+      expect(suite.props).toEqual({});
+    });
+    it("should add 'px' to bare num values on some transition properties", function() {
+      suite = new MockSuite();
+      trans["slidey-x"](123);
+      trans["slidey-y"](123);
+      trans["slidey-width"](123);
+      trans["slidey-height"](123);
+      expect(suite.props).toEqual({ left : '123px', 
+                                    top : '123px', 
+                                    width : '123px', 
+                                    height : '123px' });
+    });
+    it("should pass on string values unmolested to some transition properties", function() {
+      suite = new MockSuite();
+      trans["slidey-x"]("abc");
+      trans["slidey-y"]("abc");
+      trans["slidey-width"]("abc");
+      trans["slidey-height"]("abc");
+      expect(suite.props).toEqual({ left : "abc", 
+                                    top : "abc", 
+                                    width : "abc", 
+                                    height : "abc" });
+    });
+    it("should refuse an invalid number value to opacity", function() {
+      suite = new MockSuite();
+      trans["slidey-opacity"]("abc");
+      expect(suite.props).toEqual({});
+      trans["slidey-opacity"]("0.4");
+      expect(suite.props).toEqual({opacity : '0.4'});
+      trans["slidey-opacity"](0.5);
+      expect(suite.props).toEqual({opacity : 0.5});
+      trans["slidey-opacity"]("4%");
+      expect(suite.props).toEqual({opacity : 0.5});
+    });
   });
 });
+// Custom Matcher Function
+var toHaveBeenCalledWithAndTest = function(){
+  var spy = this.actual,
+             expected = Array.prototype.slice.call(arguments),
+             allArgs = spy.argsForCall,
+             args,
+             arg,
+             match = false;
+   for (var i=0; i < allArgs.length; i++) {
+     args = allArgs[i];
+     if(args.length == expected.length){
+       for (var j=0; j < args.length; j++) {
+         arg = args[j];
+         if(angular.isFunction(expected[j])){
+           match = (expected[j])(arg);
+         } else {
+           match = angular.equals(arg, expected[j]); 
+         }
+         if(!match) break;
+       };
+     }
+     if(match) break;
+   };
+  this.message = function(){
+            return "expected "+spy.identity+" to have been called with type "+expected+
+                   " but it was called with the following: "+allArgs;
+          }
+  return match;
+}

@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en" ng-app="myApp">
+<head>
+  <meta charset="utf-8">
+  <title>My AngularJS App</title>
+  <link rel="stylesheet" href="css/app.css"/>
+</head>
+<body ng-controller="AppCtrl">
+   <input type="button" name="show" value="Show Block" id="show" ng-click="$broadcast('show')">
+  <div a-layout>
+   <div a-block id="top" be-slidey="height">
+      <div a-screen with-name="screen" ng-controller="SubCtrl">
+         <div>
+            <p>Test = {{test}}</p>
+            <p>Screen height = {{_screen.calculateHeight()}}</p>
+            <p><a ng-click="_screen.show('screen-2')">Show Screen 2</a></p>
+            <p><a ng-click="_screen.hide()">Hide</a></p>
+         </div>
+      </div>
+      <div a-screen with-name="screen-2">
+         <div>
+            <p>Screen2</p>
+            <br>
+            <p><a ng-click="_block.overlay().show()">Show Block Overlay</a></p>
+            <p><a ng-click="_block.hide()">Hide Block!</a></p>
+            <br>
+         </div>
+      </div>
+      <div an-overlay with-name="overlayA" class="my-overlay">
+         <p>Hello Overlay</p>
+         <p><input type="button" ng-click="_overlay.show('overlayB')" value="Show overlay B"></p>
+         <p><input type="button" ng-click="_overlay.hide()" value="Hide Overlay"></p>
+         <p><input type="button" ng-click="_parent.hide()" value="Hide Parent"></p>
+         <div class="back"></div>
+      </div>
+      <div an-overlay with-name="overlayB" class="my-overlay">
+         <p>Hello Overlay B!</p>
+         <p><input type="button" ng-click="_overlay.show('overlayA')" value="Show overlay A"></p>
+         <p><input type="button" ng-click="_overlay.hide()" value="Hide Overlay"></p>
+         <div class="back"></div>
+      </div>
+   </div>
+   <div a-block id="bottom" id="other-block" be-slidey="y,height">
+      <div a-screen with-name="thisScreen">
+         <div ng-click="_screen.show('otherScreen')">
+            <p>asdf</p>
+         </div>
+      </div>
+      <div a-screen with-name="otherScreen">
+         <div>
+            <p>asdfasdfsdf</p>
+            <p>asdfasdfsdf</p>
+            <p>asdfasdfsdf</p>
+         </div>
+      </div>
+   </div>
+</div>
+  <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+  <script src="lib/angular/angular.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/services.js"></script>
+  <script src="js/controllers.js"></script>
+  <script src="js/filters.js"></script>
+  <script src="js/layoutBase.js"></script>
+  <script src="js/layout.js"></script>
+  <script src="js/directives.js"></script>
+</body>
+</html>

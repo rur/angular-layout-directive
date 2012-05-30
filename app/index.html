@@ -9,7 +9,7 @@
    <input type="button" name="show" value="Show" id="show" ng-click="$broadcast('show')">
   <a-layout>
    <a-block id="top" be-slidey="height">
-      <a-screen ng-controller="SubCtrl">
+      <a-screen with-name="screen" ng-controller="SubCtrl">
          <div>
             <p>Test = {{test}}</p>
             <p>Screen height = {{_screen.calculateHeight()}}</p>

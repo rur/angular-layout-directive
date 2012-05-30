@@ -41,7 +41,8 @@ angular.module('myApp.directives', [])
           // properties
           var layout = controllers[0],
               block = controllers[1],
-              name = scope.name = layout.addChild(scope, iAttrs.withName);
+              name = scope.name = layout.addChild(scope, iAttrs.withName),
+              layoutScope = scope.layout = layout.layoutScope;
           // Init
           // override the default layout reflow function
           layout.layout(function(blocks, scope){
@@ -78,11 +79,16 @@ angular.module('myApp.directives', [])
             var screen = controllers[1],
                 block = controllers[0],
                 screenScope = scope._screen,
-                blockScope = scope._block = block.scope,
+                blockScope = scope._block = screenScope.block = block.layoutScope,
+                layoutScope,
                 name = screenScope.name = block.addChild(screenScope, iAttrs.withName),
                 childScope;
             //
             // Watchers and Listeners
+            // get the root layout scope when it becomes available
+            scope.$evalAsync(function(){
+                layoutScope = scope._layout = blockScope.layout;
+              });
             // add/remove template 
             screenScope.$watch("displaying()", function(newval, oldval){
                               if(newval == oldval) return;
@@ -92,6 +98,11 @@ angular.module('myApp.directives', [])
             screenScope.$watch( function(){ return $(iElement).height(); },
                           function(newval){ 
                             screenScope.height = newval;
+                          } );
+            // watch the width of the element
+            screenScope.$watch( function(){ return $(iElement).width(); },
+                          function(newval){ 
+                            screenScope.width = newval;
                           } );
             // listen for transitionedOut event to dispose the screen contents
             scope.$on("transitionedOut", function(){
@@ -144,6 +155,103 @@ angular.module('myApp.directives', [])
         }
       } 
     }])
+    
+    /**
+      * An Overlay Directive
+      * 
+      */
+     .directive('anOverlay', [ "$compile", "$exceptionHandler", function($compile, $exceptionHandler) {
+       return {
+         restrict:"EA",
+         scope:true,
+         require:["^?aLayout", "^?aBlock","^?aScreen", "anOverlay"],
+         controller: OverlayDirectiveCtrl,
+         //////////////////
+         // COMPILE
+         compile:function(element, attr){
+           var template = element.html();
+           element.html("");
+           //////////////
+           // LINK
+           return function(scope, iElement, iAttrs, controllers){
+            // properties
+            var overlay, overlayScope, parentScope, name, childScope, masterOverlay;
+            // 
+            // get parent controller and
+            // init the parent layout scope
+            for (var i=0; i < 3; i++) {
+             if(controllers[i]){
+               parentScope = (controllers[i]).layoutScope;
+             }
+            };
+            if(!parentScope) $exceptionHandler("No parent scope found!");
+            if(!parentScope.overlay_ids){
+              parentScope.overlays_by_id = {};
+              parentScope.overlay_ids = [];
+              parentScope.overlay = angular.bind( parentScope, function(name){
+               name = name || this.currentOverlay || this.overlay_ids[0];
+               return this.overlays_by_id[name];
+              });
+            }
+            // wire up properties
+            scope._parent = parentScope;
+            overlay = controllers[3];
+            overlayScope = scope._overlay;
+            name = overlayScope.name = overlay.getUniqueID( iAttrs.withName, parentScope.overlay_ids, "overlay_");
+            parentScope.overlay_ids.push(name);
+            parentScope.overlays_by_id[name] = overlayScope; 
+             //
+             // Watchers and Listeners
+             // add/remove template 
+             overlayScope.$watch( "displaying()", 
+                          function(newval, oldval){
+                             if(newval == oldval) return;
+                             toggleContent(newval)
+                           });
+             // watch the height of the element
+             overlayScope.$watch( function(){ return $(iElement).height(); },
+                           function(newval){ 
+                             overlayScope.height = newval;
+                           } );
+             // watch the width of the element
+             overlayScope.$watch( function(){ return $(iElement).width(); },
+                           function(newval){ 
+                             overlayScope.width = newval;
+                           } );
+             // listen for transitionedOut event to dispose the overlay contents
+             scope.$on("transitionedOut", function(){
+               clearContent(); 
+             });
+             // 
+             // Init
+             overlay.init();
+             // 
+             // 
+             // private
+             function toggleContent (show) {
+               if(show) {
+                 if(childScope){
+                   childScope.$destroy();
+                 }
+                 childScope = scope.$new();
+                 iElement.html(template);
+                 $compile(iElement.contents())(childScope);
+                 overlay.transitionIn();
+               } else {
+                 overlay.transitionOut();
+               }
+             }
+             function clearContent(){
+               if (childScope) {
+                 childScope.$destroy();
+                 childScope = null;
+               }
+               iElement.html('');
+             };
+           }
+         }
+       } 
+     }])
     /**
      * Be Slidey directive
      * 

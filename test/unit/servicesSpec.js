@@ -196,6 +196,14 @@ describe('service', function() {
         expect(fireSpy).toHaveBeenCalledWith(element, {a: "value2"});
       });
       
+      it("should call a function when it is passed to apply", function() {
+        var spy = jasmine.createSpy("apply function spy").andReturn("abc");
+        localTrans.apply(spy);
+        expect(spy).toHaveBeenCalled();
+        localTrans.apply({test: spy});
+        expect(scope.test).toEqual("abc");
+      });
+      
       it("should have a default transition suite applied", function() {
         localTrans.bind("x","css-x");
         localTrans.bind("y","css-y");
