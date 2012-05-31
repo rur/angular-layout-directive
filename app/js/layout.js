@@ -27,6 +27,7 @@ function LayoutDirectiveCtrl ($scope, $element, $attrs, transition, augmentContr
       var height = 0,
           width = 0;
       angular.forEach(children, function (child){
+        child.y = height;
         height += child.calculateHeight();
         width = Math.max( width, child.calculateWidth());
       });
@@ -52,7 +53,8 @@ function LayoutDirectiveCtrl ($scope, $element, $attrs, transition, augmentContr
     }
   }
   
-  this._super = angular.extend(this._super||{}, {
+  this.__super = this._super;
+  this._super = angular.extend({}, this._super||{}, {
     defaultLayout: self.defaultLayout
   });
 }
@@ -77,12 +79,6 @@ function BlockDirectiveCtrl ($scope, $element, $attrs, transition, augmentContro
   $element.css("overflow-x","hidden");
   $element.css("overflow-y","hidden");
   $element.css("position","absolute");
-  trans.state.config("init", {height: 0});    
-  trans.state.config("hide", {height: 0});    
-  trans.state.config("show", function(){self.layout()});    
-  trans.bind({ height: "css-height",
-               y: "css-y", 
-               opacity: "css-opacity" });
   
   ////////////////
   // Scope API
@@ -102,24 +98,6 @@ function BlockDirectiveCtrl ($scope, $element, $attrs, transition, augmentContro
   }
   
   /**
-   * Show this block
-   * 
-   * triggers the show transition state
-   */
-  $scope.show = function(){
-    trans.state("show");
-  }
-  
-  /**
-   * Hide this block
-   * 
-   * triggers the hide transition state
-   */
-  $scope.hide = function(){
-    trans.state("hide");
-  }
-  
-  /**
     * The default reflow layout function factory method
     */
    this.defaultLayout = function(){
@@ -127,8 +105,8 @@ function BlockDirectiveCtrl ($scope, $element, $attrs, transition, augmentContro
       var height = 0,
           width = 0;
        angular.forEach(children, function (child){
-         height = Math.max( height, child.calculateHeight());
-         width += child.calculateWidth();
+         height += child.calculateHeight();
+         width = Math.max(child.calculateWidth(), width);
        });
        scope.height = height;
        scope.width = width;
@@ -141,7 +119,6 @@ function BlockDirectiveCtrl ($scope, $element, $attrs, transition, augmentContro
    * init function get called during linking phase
    */
   this.init = function(){
-    trans.state("init");
     // augment controller
     if(angular.isString(extCtrl) && extCtrl.length > 0) {
       locals = { $scope: $scope, 
@@ -153,7 +130,8 @@ function BlockDirectiveCtrl ($scope, $element, $attrs, transition, augmentContro
   }
   
   // make it easier to override these functions
-  this._super = angular.extend(this._super||{}, {
+  this.__super = this._super;
+  this._super = angular.extend({}, this._super||{}, {
     init: self.init
   });
 }
@@ -165,15 +143,15 @@ BlockDirectiveCtrl.$inject = ["$scope", "$element", "$attrs", "transition", "aug
  * 
  * 
  */
-function ScreenDirectiveCtrl($scope, $element, $attrs, transition, augmentController){
+function ScreenDirectiveCtrl($scope, $element, $attrs, augmentController){
   var self = this,
-      screen = $scope._screen = $scope.$new(true),
-      trans = this.transition = transition(screen, $element),
+      screen = this.layoutScope,
+      trans = this.transition,
       locals,
       extCtrl = $attrs["withController"];
   
   this.setLayoutScope(screen);
-  this.addReflowWatcher("displaying");
+  this.addReflowWatcher("displaying()");
   this.addReflowWatcher("calculateHeight()");
   
   $element.css("width","100%");
@@ -194,6 +172,13 @@ function ScreenDirectiveCtrl($scope, $element, $attrs, transition, augmentContro
   ////////////////
   // setup the screen api
   //
+  screen.calculateHeight = function(args){
+    return screen.displaying() ? screen.height : 0;
+  }
+  screen.calculateWidth = function(args){
+    return screen.displaying() ? screen.width : 0;
+  }
+  
   screen.show = function(name){
     var name = name || screen.name;
     $scope._block.currentScreen = name;
@@ -205,14 +190,6 @@ function ScreenDirectiveCtrl($scope, $element, $attrs, transition, augmentContro
     }
   }
   
-  screen.calculateHeight = function () {
-   return screen.height;
-  } 
-  
-  screen.calculateWidth = function () {
-   return screen.width;
-  }
-  
   screen.displaying = function(){
     return ($scope._block.currentScreen == screen.name);
   }
@@ -220,27 +197,15 @@ function ScreenDirectiveCtrl($scope, $element, $attrs, transition, augmentContro
   ////////////////
   // Ctrl API 
   // transition functions
-  // nb: Notice that transition events are broadcast on the directive scope, not the isolated 
-  //     layout scope. This makes them available to your app controllers
   this.transitionIn = function(){
-    $scope.$broadcast("transitioningIn");
+    self.__super.transitionIn();
     trans.state("show");
   }
   
-  this.transitionInComplete = function(){
-    $scope.$broadcast("transitionedIn");
-  }
-  
   this.transitionOut = function(){
-    $scope.$broadcast("transitioningOut");
+    self.__super.transitionOut();
     trans.state("hide");
   }
-   
-  this.transitionOutComplete = function(){
-    $scope.$broadcast("transitionedOut");
-  }
-  
-  this.layoutScope = screen;
   
   // init function get called during linking phase
   this.init = function(){
@@ -256,7 +221,8 @@ function ScreenDirectiveCtrl($scope, $element, $attrs, transition, augmentContro
   }
   
   // make it easier to override these functions
-  this._super = angular.extend(this._super||{}, {
+  this.__super = this._super;
+  this._super = angular.extend({}, this._super||{}, {
     init: self.init, 
     transitionIn: self.transitionIn,
     transitionInComplete: self.transitionInComplete,
@@ -264,12 +230,12 @@ function ScreenDirectiveCtrl($scope, $element, $attrs, transition, augmentContro
     transitionOutComplete: self.transitionOutComplete
   });
 }
-ScreenDirectiveCtrl.$inject = ["$scope", "$element", "$attrs", "transition", "augmentController"]
+ScreenDirectiveCtrl.$inject = ["$scope", "$element", "$attrs", "augmentController"]
 
-function OverlayDirectiveCtrl ($scope, $attrs, $element, transition, augmentController) {
+function OverlayDirectiveCtrl ($scope, $attrs, $element, augmentController) {
   var self = this,
-      overlay = $scope._overlay = $scope.$new(true),
-      trans = this.transition = transition(overlay, $element),
+      overlay = this.layoutScope,
+      trans = this.transition,
       extCtrl = $attrs.withController,
       locals;
   
@@ -313,27 +279,14 @@ function OverlayDirectiveCtrl ($scope, $attrs, $element, transition, augmentCont
   ////////////////
   // Ctrl API 
   // transition functions
-  // nb: Notice that transition events are broadcast on the directive scope, not the isolated 
-  //     layout scope. This makes them available to your app controllers
   this.transitionIn = function(){
-    $scope.$broadcast("transitioningIn");
+    self.__super.transitionIn();
     trans.state("show");
   }
-  
-  this.transitionInComplete = function(){
-    $scope.$broadcast("transitionedIn");
-  }
-  
   this.transitionOut = function(){
-    $scope.$broadcast("transitioningOut");
+    self.__super.transitionOut();
     trans.state("hide");
   }
-   
-  this.transitionOutComplete = function(){
-    $scope.$broadcast("transitionedOut");
-  }
-  
-  this.layoutScope = overlay;
   
   // init function get called during linking phase
   this.init = function(){
@@ -347,19 +300,85 @@ function OverlayDirectiveCtrl ($scope, $attrs, $element, transition, augmentCont
       augmentController(extCtrl, this, locals);
     }
   }
-  
-  // make it easier to override these functions
-  this._super = angular.extend(this._super||{}, {
-    init: self.init, 
-    transitionIn: self.transitionIn,
-    transitionInComplete: self.transitionInComplete,
-    transitionOut: self.transitionOut,
-    transitionOutComplete: self.transitionOutComplete
-  });
+    
+    // make it easier to override these functions
+    this.__super = this._super;
+    this._super = angular.extend({}, this._super||{}, {
+      init: self.init, 
+      transitionIn: self.transitionIn,
+      transitionInComplete: self.transitionInComplete,
+      transitionOut: self.transitionOut,
+      transitionOutComplete: self.transitionOutComplete
+    });
 }
 
-OverlayDirectiveCtrl.$inject = ["$scope", "$attrs", "$element", "transition", 'augmentController'];
+OverlayDirectiveCtrl.$inject = ["$scope", "$attrs", "$element", 'augmentController'];
 
+function OverlayPanelDirectiveCtrl ($scope, $element, $attrs, $defer) {
+  var self = this,
+      panel = $scope._panel = this.layoutScope,
+      trans = this.transition;
+  $element.css("position", "absolute");
+  $element.css("display", "block");
+  trans.bind({x: "css-x", y: "css-y"});
+  // panel api
+  /**
+   * The side of the overlay frame that the panel aligns to
+   */
+  panel.align = $attrs.anOverlayPanel.length > 0 ? $attrs.anOverlayPanel : "center";
+  
+  /**
+   * repositions the panel in relation to the parent overlay
+   */
+  panel.reposition = function(){
+    var ovW = $scope._overlay && $scope._overlay.width || 0,
+        ovH = $scope._overlay && $scope._overlay.height || 0,
+        plW = panel.width || 0,
+        plH = panel.height || 0;
+    switch(panel.align){
+      case "right":
+      case "topright":
+      case "bottomright":
+        panel.x = ovW-plW;
+        break;
+      case "center":
+      case "top":
+      case "bottom":
+        panel.x = (ovW-plW)*0.5;
+        break;
+      case "left":
+      case "topleft":
+      case "bottomleft":
+        panel.x = 0;
+        break;
+    }    
+    switch(panel.align){
+      case "bottom":
+      case "bottomleft":
+      case "bottomright":
+        panel.y = ovH-plH;
+        break;
+      case "center":
+      case "left":
+      case "right":
+        panel.y = (ovH-plH)*0.5;
+        break;
+      case "top":
+      case "topleft":
+      case "topright":
+        panel.y = 0;
+        break;
+    }
+  }
+  
+  // Controller members
+  this.layoutScope = panel;
+  
+  this.init = function(){
+    
+  }
+}
+OverlayPanelDirectiveCtrl.$inject = ["$scope", "$element", "$attrs", "$defer"];
 
 /**
  * Be Slidey Transition Suite
@@ -371,25 +390,25 @@ OverlayDirectiveCtrl.$inject = ["$scope", "$attrs", "$element", "transition", 'a
    this.props = {};
     this.register("slidey-x", function (newval, oldval) {
       if( !isValidNumString(newval) ) return false;
-      newval = !isNaN(newval) ? newval.toString() + "px" : newval;
+      newval = isValidNum(newval) ? newval.toString() + "px" : newval;
       self.props["left"] = newval;
     });
 
     this.register("slidey-y", function (newval, oldval) {
       if( !isValidNumString(newval) ) return false;
-      newval = !isNaN(newval) ? newval.toString() + "px" : newval;
+      newval = isValidNum(newval) ? newval.toString() + "px" : newval;
       self.props["top"] = newval;
     });
 
     this.register("slidey-width", function (newval, oldval) {
       if( !isValidNumString(newval) ) return false;
-      newval = !isNaN(newval) ? newval.toString() + "px" : newval;
+      newval = isValidNum(newval) ? newval.toString() + "px" : newval;
       self.props["width"] = newval;
     });
 
     this.register("slidey-height", function (newval, oldval) {
       if( !isValidNumString(newval) ) return false;
-      newval = !isNaN(newval) ? newval.toString() + "px" : newval;
+      newval = isValidNum(newval) ? newval.toString() + "px" : newval;
       self.props["height"] = newval;
     });
 
@@ -409,13 +428,14 @@ OverlayDirectiveCtrl.$inject = ["$scope", "$attrs", "$element", "transition", 'a
       return (angular.isString(val) || isValidNum(val));
     }
     function isValidNum (val) {
-      return val && typeof val != "boolean" && !angular.isArray(val) && (angular.isNumber(val) || !isNaN(val)) ;
+      return val != null && typeof val != "boolean" && !angular.isArray(val) && angular.isNumber(Number(val)) && !isNaN(val);
     }
  }
  // Extend controllers with base layout classes
  window.LayoutDirectiveCtrl   = layout_component_utils.extendController(LayoutContainerBase, LayoutDirectiveCtrl);
  window.BlockDirectiveCtrl    = layout_component_utils.extendController(LayoutContainerBlockBase, BlockDirectiveCtrl);
- window.ScreenDirectiveCtrl   = layout_component_utils.extendController(LayoutBlockBase, ScreenDirectiveCtrl);
- window.OverlayDirectiveCtrl  = layout_component_utils.extendController(LayoutContainerBase, OverlayDirectiveCtrl);
+ window.ScreenDirectiveCtrl   = layout_component_utils.extendController(LayoutBlockBase, LayoutDisplayBase, ScreenDirectiveCtrl);
+ window.OverlayDirectiveCtrl  = layout_component_utils.extendController(LayoutContainerBase, LayoutDisplayBase, OverlayDirectiveCtrl);
+ window.OverlayPanelDirectiveCtrl = layout_component_utils.extendController(LayoutBlockBase, LayoutDisplayBase, OverlayPanelDirectiveCtrl);
  window.BeSlideyTransitionSuite = BeSlideyTransitionSuite;
 })(window);

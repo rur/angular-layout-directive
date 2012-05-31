@@ -21,23 +21,29 @@
          <div>
             <p>Screen2</p>
             <br>
-            <p><a ng-click="_block.overlay().show()">Show Block Overlay</a></p>
+            <p><a ng-click="_screen.overlay('overlayB').show()">Show Block Overlay</a></p>
             <p><a ng-click="_block.hide()">Hide Block!</a></p>
             <br>
+            <br>
+            <br>
+            <br>
          </div>
-      </div>
-      <div an-overlay with-name="overlayA" class="my-overlay">
-         <p>Hello Overlay</p>
-         <p><input type="button" ng-click="_overlay.show('overlayB')" value="Show overlay B"></p>
-         <p><input type="button" ng-click="_overlay.hide()" value="Hide Overlay"></p>
-         <p><input type="button" ng-click="_parent.hide()" value="Hide Parent"></p>
-         <div class="back"></div>
-      </div>
-      <div an-overlay with-name="overlayB" class="my-overlay">
-         <p>Hello Overlay B!</p>
-         <p><input type="button" ng-click="_overlay.show('overlayA')" value="Show overlay A"></p>
-         <p><input type="button" ng-click="_overlay.hide()" value="Hide Overlay"></p>
-         <div class="back"></div>
+         <div an-overlay with-name="overlayA" class="my-overlay">
+            <div an-overlay-panel="center" be-slidey="x" class="my-panel">
+               <p>Hello Overlay</p>
+               <p>panel trans state = {{_panel.transState}}</p>
+               <p><input type="button" ng-click="_overlay.show('overlayB')" value="Show overlay B"></p>
+               <p><input type="button" ng-click="_overlay.hide()" value="Hide Overlay"></p>
+               <p><input type="button" ng-click="_parent.hide()" value="Hide Parent"></p>
+            </div>
+            <div class="back"></div>
+         </div>
+         <div an-overlay with-name="overlayB" class="my-overlay">
+            <p>Hello Overlay B!</p>
+            <p><input type="button" ng-click="_overlay.show('overlayA')" value="Show overlay A"></p>
+            <p><input type="button" ng-click="_overlay.hide()" value="Hide Overlay"></p>
+            <div class="back"></div>
+         </div>
       </div>
    </div>
    <div a-block id="bottom" id="other-block" be-slidey="y,height">

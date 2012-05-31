@@ -65,11 +65,12 @@ describe("Layout Base Controllers", function() {
   describe("LayoutContainerBase", function() {
     var ctrl,
         scope,
-        injector;
+        injector,
+        locals;
     beforeEach(inject(function($rootScope, $injector) {
       scope = $rootScope.$new();
       injector = $injector;
-      var locals = {
+      locals = {
         $scope: scope
       }
       ctrl = injector.instantiate(LayoutContainerBase, locals);
@@ -117,11 +118,37 @@ describe("Layout Base Controllers", function() {
       expect(layoutSpy).toHaveBeenCalledWith(scope.children, scope);
     });
     
+    it("should trigger the layout function when reflow is called", function() {
+      spyOn(ctrl, "layout");
+      ctrl.reflow();
+      expect(ctrl.layout).toHaveBeenCalledWith();
+    });
+    
+    it("should call _super reflow function", function() {
+      var reflowSpy = jasmine.createSpy("Super Reflow Spy"),
+          ctrl2;
+      function TestClass(){
+        this._super = {
+          reflow: reflowSpy 
+        }
+        injector.invoke(LayoutContainerBase, this, locals);
+      }
+      ctrl2 = new TestClass();
+      ctrl2.reflow();
+      expect(reflowSpy).toHaveBeenCalled();
+    });
+    
     it("should have a _super object with a reference to its methods", function() {
       expect(ctrl._super.addChild).toEqual(ctrl.addChild);
       expect(ctrl._super.layout).toEqual(ctrl.layout);
     });
-    
+
+    it("should add a reflow function to the layout scope", function() {
+      expect(angular.isFunction(scope.reflow)).toBeTruthy();
+      spyOn(ctrl, "reflow");
+      scope.reflow();
+      expect(ctrl.reflow).toHaveBeenCalledWith();
+    });
     
     describe("validateAndTrim", function() {
       it("should pass some and fail others", function() {
@@ -171,20 +198,20 @@ describe("Layout Base Controllers", function() {
     });
     it("should trigger a reflow event to be emitted on the scope", function() {
       spyOn(scope, "$emit");
-      ctrl.triggerReflow();
+      ctrl.reflow();
       expect(scope.$emit).toHaveBeenCalledWith("reflow");
     });
     describe("reflow watcher methods", function() {
       it("should add and remove reflow watcher expressions", function() {
-        spyOn(ctrl, "triggerReflow");
+        spyOn(ctrl, "reflow");
         ctrl.addReflowWatcher("test");
         scope.test = 123;
         scope.$digest();
-        expect(ctrl.triggerReflow).toHaveBeenCalled();
+        expect(ctrl.reflow).toHaveBeenCalled();
         ctrl.removeReflowWatcher("test");
         scope.test = 321;
         scope.$digest();
-        expect(ctrl.triggerReflow.callCount).toEqual(1);
+        expect(ctrl.reflow.callCount).toEqual(1);
       });
       it("should raise an error if the expression is not a string", function() {
         expect(function(){ctrl.addReflowWatcher(function(){});}).toThrow("You can only add a string expression as a reflow watcher");
@@ -195,20 +222,86 @@ describe("Layout Base Controllers", function() {
       ctrl.setLayoutScope(newScope);
       spyOn(newScope, "$emit");
       spyOn(newScope, "$watch");
-      ctrl.triggerReflow();
+      ctrl.reflow();
       expect(newScope.$emit).toHaveBeenCalledWith("reflow");
       ctrl.addReflowWatcher("test");
       expect(newScope.$watch).toHaveBeenCalled();
+    });
+    it("should add a reflow function to the layout scope", function() {
+      expect(angular.isFunction(scope.reflow)).toBeTruthy();
+      spyOn(ctrl, "reflow");
+      scope.reflow();
+      expect(ctrl.reflow).toHaveBeenCalledWith();
+    });
+  });
+  describe("LayoutDisplayBase", function() {
+    var ctrl,
+        scope,
+        layoutScope,
+        transService,
+        transition,
+        injector,
+        element;
+    beforeEach(inject(function($rootScope, $injector) {
+      scope = jasmine.createSpyObj("Scope Spy", ["$new", "$broadcast"]);
+      layoutScope = {name: "layoutScope"};
+      scope.$new.andReturn(layoutScope);
+      injector = $injector;
+      transition = jasmine.createSpyObj("Transition Spy", ["state", "bind", "addSuite"]);
+      transition.state.config = jasmine.createSpy("Transition State Config Spy");
+      transService = jasmine.createSpy("Tansition Service Spy").andReturn(transition);
+      element = angular.element(document.createElement("div"));
+      var locals = {
+        $scope: scope,
+        $element: element,
+        transition: transService
+      }
+      ctrl = injector.instantiate(LayoutDisplayBase, locals);
+      ctrl.init();
+    }));
+    it("should instanciate Layout display base ", function() {
+      expect(ctrl).not.toBeNull();
+      expect(ctrl).toBeDefined();
+    });
+    it("should create an isolated layout scope", function() {
+      expect(scope.$new).toHaveBeenCalledWith(true);
+      expect(ctrl.layoutScope).toEqual(layoutScope);
+    });
+    it("should create and configure the transition object", function() {
+      expect(transService).toHaveBeenCalledWith(layoutScope, element);
+      expect(ctrl.transition).toEqual(transition);
+    });
+    
+    it("should have transition functions which broadcast events", function() {
+      expect(layoutScope.transState).toEqual("initializing");
+      ctrl.transitionIn();
+      expect(scope.$broadcast).toHaveBeenCalledWith("transitioningIn");
+      expect(layoutScope.transState).toEqual("transitioningIn");
+      ctrl.transitionInComplete();
+      expect(scope.$broadcast).toHaveBeenCalledWith("transitionedIn");
+      expect(layoutScope.transState).toEqual("transitionedIn");
+      ctrl.transitionOut();
+      expect(scope.$broadcast).toHaveBeenCalledWith("transitioningOut");
+      expect(layoutScope.transState).toEqual("transitioningOut");
+      ctrl.transitionOutComplete();
+      expect(scope.$broadcast).toHaveBeenCalledWith("transitionedOut");
+      expect(layoutScope.transState).toEqual("transitionedOut");
+    });
+    it("should provide functions in a _super hash", function() {
+      expect(ctrl._super).toEqual({
+        transitionIn: ctrl.transitionIn,
+        transitionInComplete: ctrl.transitionInComplete,
+        transitionOut: ctrl.transitionOut,
+        transitionOutComplete: ctrl.transitionOutComplete
+      });
     });
   });
   describe("LayoutContainerBlockBase", function() {
     var ctrl,
         scope,
-        injector,
-        defaultLayout;
+        injector;
     beforeEach(inject(function($rootScope, $injector) {
-      defaultLayout = jasmine.createSpy("Default Layout Spy");
-      scope = $rootScope.$new();
+      scope = jasmine.createSpyObj("Scope", ["$emit"])
       injector = $injector;
       var locals = {
         $scope: scope
@@ -216,71 +309,21 @@ describe("Layout Base Controllers", function() {
       ctrl = injector.instantiate(LayoutContainerBlockBase, locals);
       ctrl.init();
     }));
-    it("should instanciate LayoutContainerBlock", function() {
+    it("should instanciate LayoutContainerBlockBase", function() {
       expect(ctrl).not.toBeNull();
       expect(ctrl).toBeDefined();
     });
-    it("should add child properties to the scope object", function() {
-      expect(scope.children).toEqual([]);
-      expect(scope.childrenByName).toEqual({});
-    });
-
-    it("should add a child returning the name", function() {
-      var child = scope.$new(true), // isolated scope
-          name = "testChildName";
-      expect(ctrl.addChild(child, name)).toEqual(name);
-      expect(ctrl.addChild(child)).toEqual("child_2");
-      expect(ctrl.addChild(child, " test ")).toEqual("test");
-      expect(scope.children).toEqual([child, child, child]);
-      expect(function(){ctrl.addChild(child, name);}).toThrow("Sorry but this Layout Container already has a child with the name 'testChildName'");
-      expect(scope.children.length).toEqual(3);
-    });
-
-    it("should set and trigger the layout function", function() {
-      var layoutSpy = jasmine.createSpy("Layout Function Spy");
-      ctrl.layout(layoutSpy);
-      scope.$digest();
-      expect(layoutSpy).not.toHaveBeenCalled();
-      ctrl.layout();
-      scope.$digest();
-      expect(layoutSpy).toHaveBeenCalledWith(scope.children, scope);
-    });
-
-    it("should have a _super object with a reference to its methods", function() {
-      expect(ctrl._super.addChild).toEqual(ctrl.addChild);
-      expect(ctrl._super.layout).toEqual(ctrl.layout);
-    });
-
-    it("should trigger a reflow event to be emitted on the scope", function() {
-      spyOn(scope, "$emit");
-      ctrl.triggerReflow();
+    it("should both trigger its own layout but also dispatch 'reflow' to its parent container", function() {
+      spyOn(ctrl, "layout");
+      ctrl.reflow();
+      expect(ctrl.layout).toHaveBeenCalledWith();
       expect(scope.$emit).toHaveBeenCalledWith("reflow");
     });
-    describe("reflow watcher methods", function() {
-      it("should add and remove reflow watcher expressions", function() {
-        spyOn(ctrl, "triggerReflow");
-        ctrl.addReflowWatcher("test");
-        scope.test = 123;
-        scope.$digest();
-        expect(ctrl.triggerReflow).toHaveBeenCalled();
-        ctrl.removeReflowWatcher("test");
-        scope.test = 321;
-        scope.$digest();
-        expect(ctrl.triggerReflow.callCount).toEqual(1);
-      });
-      it("should raise an error if the expression is not a string", function() {
-        expect(function(){ctrl.addReflowWatcher(function(){});}).toThrow("You can only add a string expression as a reflow watcher");
-      });      
-    });
-    it("should set the layout scope", function() {
-      var newScope = scope.$new(true);
-      ctrl.setLayoutScope(newScope);
-      spyOn(newScope, "$emit");
-      spyOn(newScope, "$watch");
-      ctrl.triggerReflow();
-      expect(newScope.$emit).toHaveBeenCalledWith("reflow");
-      ctrl.addReflowWatcher("test");
-      expect(newScope.$watch).toHaveBeenCalled();
+    it("should add a reflow function to the layout scope", function() {
+      expect(angular.isFunction(scope.reflow)).toBeTruthy();
+      spyOn(ctrl, "reflow");
+      scope.reflow();
+      expect(ctrl.reflow).toHaveBeenCalledWith();
     });
   });
 });

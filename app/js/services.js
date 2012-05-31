@@ -3,6 +3,9 @@
 /* Services */
 
 angular.module('myApp.services', [])
+  .factory("$jQuery", function(){
+    return jQuery || angular.element;
+  })
   /**
    * Augment Controller service
    */
@@ -73,25 +76,25 @@ angular.module('myApp.services', [])
       
       this.register("css-x", function (newval, oldval) {
         if( !isValidNumString(newval) ) return false;
-        newval = !isNaN(newval) ? newval.toString() + "px" : newval;
+        newval = isValidNum(newval) ? newval.toString() + "px" : newval;
         props["left"] = newval;
       })
       
       this.register("css-y", function (newval, oldval) {
         if( !isValidNumString(newval) ) return false;
-        newval = !isNaN(newval) ? newval.toString() + "px" : newval;
+        newval = isValidNum(newval) ? newval.toString() + "px" : newval;
         props["top"] = newval;
       })
       
       this.register("css-width", function (newval, oldval) {
         if( !isValidNumString(newval) ) return false;
-        newval = !isNaN(newval) ? newval.toString() + "px" : newval;
+        newval = isValidNum(newval) ? newval.toString() + "px" : newval;
         props["width"] = newval;
       })
             
       this.register("css-height", function (newval, oldval) {
         if( !isValidNumString(newval) ) return false;
-        newval = !isNaN(newval) ? newval.toString() + "px" : newval;
+        newval = isValidNum(newval) ? newval.toString() + "px" : newval;
         props["height"] = newval;
       })
       
@@ -129,7 +132,7 @@ angular.module('myApp.services', [])
         return (angular.isString(val) || isValidNum(val));
       }
       function isValidNum (val) {
-        return val && typeof val != "boolean" && !angular.isArray(val) && (angular.isNumber(val) || !isNaN(val)) ;
+        return val != null && typeof val != "boolean" && !angular.isArray(val) && angular.isNumber(Number(val)) && !isNaN(val);
       }
     }
     

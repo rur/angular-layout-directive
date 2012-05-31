@@ -44,15 +44,6 @@ angular.module('myApp.directives', [])
               name = scope.name = layout.addChild(scope, iAttrs.withName),
               layoutScope = scope.layout = layout.layoutScope;
           // Init
-          // override the default layout reflow function
-          layout.layout(function(blocks, scope){
-            var height = 0;
-             angular.forEach(blocks, function (block){
-               block.y = height;
-               height += block.calculateHeight();
-             });
-             scope.height = height;
-          });
           block.init();
         }
       } 
@@ -61,7 +52,7 @@ angular.module('myApp.directives', [])
      * A Screen Directive
      * 
      */
-    .directive('aScreen', [ "$compile", function($compile) {
+    .directive('aScreen', [ "$compile", "$jQuery", function($compile, $jQuery) {
       return {
         restrict:"EA",
         scope:true,
@@ -78,7 +69,7 @@ angular.module('myApp.directives', [])
             // properties
             var screen = controllers[1],
                 block = controllers[0],
-                screenScope = scope._screen,
+                screenScope = scope._screen = screen.layoutScope,
                 blockScope = scope._block = screenScope.block = block.layoutScope,
                 layoutScope,
                 name = screenScope.name = block.addChild(screenScope, iAttrs.withName),
@@ -95,35 +86,26 @@ angular.module('myApp.directives', [])
                               toggleContent(newval)
                             });
             // watch the height of the element
-            screenScope.$watch( function(){ return $(iElement).height(); },
+            screenScope.$watch( function(){ return $jQuery(iElement).height(); },
                           function(newval){ 
                             screenScope.height = newval;
                           } );
             // watch the width of the element
-            screenScope.$watch( function(){ return $(iElement).width(); },
+            screenScope.$watch( function(){ return $jQuery(iElement).width(); },
                           function(newval){ 
                             screenScope.width = newval;
                           } );
+            // listen for transitionedOut event to dispose the overlay contents
+            scope.$on("transitionedIn", function(){
+              // screenScope.height = $jQuery(iElement).height();
+              // screenScope.width = $jQuery(iElement).width();
+            });
             // listen for transitionedOut event to dispose the screen contents
             scope.$on("transitionedOut", function(){
-              clearContent(); 
+              clearContent();
             });
             // 
             // Init
-            // override the default block layout to handle screens
-            block.layout(function (screens, blockScope) {
-              var height = 0,
-                  width = 0;
-               angular.forEach(screens, function (screen){
-                 if(screen.displaying()){
-                   height = Math.max(height, screen.calculateHeight());
-                   width = Math.max(width, screen.calculateWidth());
-                 }
-               });
-               blockScope.height = height;
-               blockScope.width = width;
-             });
-            screen.init();
             // if this is first screen registered, show it
             if(!blockScope.currentScreen) {
               screenScope.show();
@@ -160,7 +142,7 @@ angular.module('myApp.directives', [])
       * An Overlay Directive
       * 
       */
-     .directive('anOverlay', [ "$compile", "$exceptionHandler", function($compile, $exceptionHandler) {
+     .directive('anOverlay', [ "$compile", "$exceptionHandler", "$jQuery", function($compile, $exceptionHandler, $jQuery) {
        return {
          restrict:"EA",
          scope:true,
@@ -196,7 +178,7 @@ angular.module('myApp.directives', [])
             // wire up properties
             scope._parent = parentScope;
             overlay = controllers[3];
-            overlayScope = scope._overlay;
+            overlayScope = scope._overlay = overlay.layoutScope;
             name = overlayScope.name = overlay.getUniqueID( iAttrs.withName, parentScope.overlay_ids, "overlay_");
             parentScope.overlay_ids.push(name);
             parentScope.overlays_by_id[name] = overlayScope; 
@@ -209,18 +191,30 @@ angular.module('myApp.directives', [])
                              toggleContent(newval)
                            });
              // watch the height of the element
-             overlayScope.$watch( function(){ return $(iElement).height(); },
+             parentScope.$watch( "height",
                            function(newval){ 
                              overlayScope.height = newval;
                            } );
              // watch the width of the element
-             overlayScope.$watch( function(){ return $(iElement).width(); },
+             parentScope.$watch( "width",
                            function(newval){ 
                              overlayScope.width = newval;
                            } );
+              // listen for transitionedOut event to dispose the overlay contents
+              scope.$on("transitionedIn", function(){
+                overlayScope.height = parentScope.height;
+                overlayScope.width = parentScope.width;
+              });
              // listen for transitionedOut event to dispose the overlay contents
              scope.$on("transitionedOut", function(){
                clearContent(); 
+             });
+             scope.$on("$destroy", function(){
+               var ids =  parentScope.overlay_ids;
+               clearContent(); 
+               delete parentScope.overlays_by_id[name];
+               ids.splice(ids.indexOf(name), 1);
+               parentScope.currentOverlay = null;
              });
              // 
              // Init
@@ -252,13 +246,72 @@ angular.module('myApp.directives', [])
          }
        } 
      }])
+     .directive('anOverlayPanel', ["$jQuery","$window", "$timeout", function($jQuery, $window, $timeout){
+      return{
+        restrict: "EA",
+        controller: OverlayPanelDirectiveCtrl,
+        link: function(scope, elm, attrs, ctrl) {
+          var panel = scope._panel,
+              responsiveness = !isNaN(attrs.responsiveness) ? Number(attrs.responsiveness) : 300,
+              resizeCount = 0;
+          scope._overlay.$watch("width+'~'+height", function(){
+            if(scope._overlay.transState == "transitionedIn") panel.reposition();
+          });
+          panel.$watch("width+'~'+height+'~'+align", function(){
+            panel.reposition();
+          })
+          scope.$watch(function(){
+              return $jQuery(elm).height();
+            },
+            function(newval){
+              if(panel.transState == "transitionedIn") panel.height = newval;
+            }
+          );
+          scope.$watch(function(){ return $jQuery(elm).width(); },
+            function(newval){
+              if(panel.transState == "transitionedIn") panel.width = newval;
+            }
+          );
+          scope.$on("transitionedIn", function () {
+            panel.width = $jQuery(elm).width();
+            panel.height = $jQuery(elm).height();
+            panel.reposition();
+          })
+          scope._overlay.$watch("displaying()", function(newval, oldval){
+            if(oldval == newval) return;
+            else if (newval) toggleBinding(true);
+            else toggleBinding();
+          })
+          // init
+          toggleBinding(true);
+          ctrl.init();
+          // 
+          // private
+          function toggleBinding (bind) {
+            if(bind){
+              $jQuery($window).bind("resize", updateSize);
+            } else {
+              $jQuery($window).unbind("resize", updateSize);
+            }
+          }
+          function updateSize () {
+            $timeout((function(c){
+              return function(){
+                if(c < resizeCount) return;
+                scope._parent.$digest();
+              }
+            })(++resizeCount), responsiveness, false);
+          }
+        }
+      }
+     }])
     /**
      * Be Slidey directive
      * 
      */
     .directive('beSlidey', function(){
       return {
-        require: ["?aLayout", "?aBlock", "?aScreen"],
+        require: ["?aLayout", "?aBlock", "?aScreen", "?anOverlay", "?anOverlayPanel"],
         //////////////
         // LINK
         link:function (scope, element, attrs, controllers) {

@@ -9,6 +9,6 @@ function AppCtrl ($scope) {
 
 function SubCtrl ($scope) {
   $scope.$on("show", function(){
-    $scope._block.show();
+    $scope._screen.show();
   })
 }

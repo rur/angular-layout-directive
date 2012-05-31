@@ -16,7 +16,7 @@
   color:white;
 }
 .my-overlay {
-  color: white;
+/*  color: white;*/
 }
 
 .my-overlay .back {
@@ -30,6 +30,12 @@
   -moz-opacity: 0.7;
   filter:alpha(opacity=70);
   z-index: -1;
+}
+
+.my-panel {
+  background-color: #FFF;
+  color: black;
+  width: 400px;
 }
 
 an-overlay a, an-overlay a:visited, an-overlay a:active{
