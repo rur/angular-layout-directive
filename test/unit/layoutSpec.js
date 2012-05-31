@@ -153,10 +153,8 @@ describe("layout component", function() {
     it("should create and configure the transition", function() {
       expect(transService).toHaveBeenCalledWith(scope, element);
       expect(ctrl.transition).toEqual(transition);
+      expect(transition.bind).toHaveBeenCalledWith("height", "css-height");
       expect(transition.state.config).toHaveBeenCalledWith("init", {height: 0});
-      expect(transition.bind).toHaveBeenCalledWith({ height: "css-height",
-                                                     y: "css-y", 
-                                                     opacity: "css-opacity" });
     });
       
     it("should set the required css formatting", function() {
@@ -214,13 +212,13 @@ describe("layout component", function() {
            reflow = ctrl.defaultLayout();
        for (var i=0; i < 5; i++) {
          var screen = jasmine.createSpyObj("screen Spy "+i, ["calculateWidth", "calculateHeight"]);
-         screen.calculateWidth.andReturn(100);
-         screen.calculateHeight.andReturn((i+1)*10);
+         screen.calculateWidth.andReturn((i+1)*10);
+         screen.calculateHeight.andReturn(100);
          screens.push(screen);
        };
        reflow(screens, scope);
-       expect(scope.width).toEqual(100*screens.length);
-       expect(scope.height).toEqual(10*screens.length);
+       expect(scope.width).toEqual(50);
+       expect(scope.height).toEqual(500);
     });
     
     it("should initialize setting the init transition state and the height reflow watcher", function() {
@@ -228,17 +226,6 @@ describe("layout component", function() {
       expect(scope.$watch.argsForCall[1][0]).toEqual("calculateWidth()");
       ctrl.init();
       expect(transition.state).toHaveBeenCalledWith("init");
-    });
-    
-    it("should add methods to the scope", function() {
-      scope.show();
-      expect(transition.state).toHaveBeenCalledWith("show");
-      scope.hide();
-      expect(transition.state).toHaveBeenCalledWith("hide");
-      scope.height = 100;
-      scope.width = 200;
-      expect(scope.calculateHeight()).toEqual(100);
-      expect(scope.calculateWidth()).toEqual(200);
     });
   });
   describe("ScreenDirectiveCtrl", function() {

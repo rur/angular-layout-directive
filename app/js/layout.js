@@ -42,7 +42,6 @@ function LayoutDirectiveCtrl ($scope, $element, $attrs, transition, augmentContr
    * Initialize the contorller, called by the linking function
    */
   this.init = function(){  
-    trans.state("init");
     // augment controller
     if(angular.isString(extCtrl) && extCtrl.length > 0) {
       locals = { $scope: $scope, 
@@ -51,6 +50,7 @@ function LayoutDirectiveCtrl ($scope, $element, $attrs, transition, augmentContr
                  $trans: trans };
       augmentController(extCtrl, this, locals);
     }
+    trans.state("init");
   }
   
   this.__super = this._super;
@@ -74,6 +74,9 @@ function BlockDirectiveCtrl ($scope, $element, $attrs, transition, augmentContro
   
   this.addReflowWatcher("calculateHeight()");
   this.addReflowWatcher("calculateWidth()");
+  
+  trans.state.config("init", {height: 0});
+  trans.bind("height", "css-height");
   
   $element.css("width","100%");
   $element.css("overflow-x","hidden");
@@ -127,6 +130,7 @@ function BlockDirectiveCtrl ($scope, $element, $attrs, transition, augmentContro
                  $trans: trans };
       augmentController(extCtrl, this, locals);
     }
+    trans.state("init");
   }
   
   // make it easier to override these functions
@@ -209,7 +213,6 @@ function ScreenDirectiveCtrl($scope, $element, $attrs, augmentController){
   
   // init function get called during linking phase
   this.init = function(){
-    trans.state("init");
     // augment controller
     if(angular.isString(extCtrl) && extCtrl.length > 0) {
       locals = { $scope: $scope, 
@@ -218,6 +221,7 @@ function ScreenDirectiveCtrl($scope, $element, $attrs, augmentController){
                  $trans: trans };
       augmentController(extCtrl, this, locals);
     }
+    trans.state("init");
   }
   
   // make it easier to override these functions
@@ -290,7 +294,6 @@ function OverlayDirectiveCtrl ($scope, $attrs, $element, augmentController) {
   
   // init function get called during linking phase
   this.init = function(){
-    trans.state("init");
     // augment controller
     if(angular.isString(extCtrl) && extCtrl.length > 0) {
       locals = { $scope: $scope, 
@@ -310,6 +313,7 @@ function OverlayDirectiveCtrl ($scope, $attrs, $element, augmentController) {
       transitionOut: self.transitionOut,
       transitionOutComplete: self.transitionOutComplete
     });
+    trans.state("init");
 }
 
 OverlayDirectiveCtrl.$inject = ["$scope", "$attrs", "$element", 'augmentController'];
