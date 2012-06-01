@@ -389,8 +389,7 @@ describe("layout component", function() {
       // assertions
       expect(transService).toHaveBeenCalledWith(_overlay, element);
       expect(ctrl.transition).toEqual(transition);
-      expect(transition.bind).toHaveBeenCalledWith({ hidden: "css-hidden",
-                                                     opacity: "css-opacity"});
+      expect(transition.bind).toHaveBeenCalledWith({ hidden: "css-hidden"});
       expect(transition.state.config).toHaveBeenCalledWith("init", {hidden: true});
       expect(transition.state.config)
         .toHaveBeenCalledWithAndTest("show", {hidden: false}, checkOnComplete);

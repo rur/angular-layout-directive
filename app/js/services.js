@@ -149,7 +149,7 @@ angular.module('myApp.services', [])
        *
        * @param {angular.module.ng.$rootScope.Scope} scope The scope to bind transiton properties to
        * @param {angular.element} element A jqLite/jQuery element to apply transions to
-       * @returns {Transition} Newly created transition object
+       * @return {Transition} Newly created transition object
        */
        // TODO: This could be used to provide centralised control of transitions, figure out how/if this would be useful.
       function transitionService (scope, element) {
@@ -421,6 +421,7 @@ angular.module('myApp.services', [])
         }
         
         // used when extending TransitionSuiteBase
+        // TODO: Allow the transition suite definitions to be injectable
         function extendClass(base, child){
           // notice this method doesn't bother with constructor arguments
           function Extended(){

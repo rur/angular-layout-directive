@@ -8,7 +8,7 @@ function AppCtrl ($scope) {
 }
 
 function SubCtrl ($scope) {
-  $scope.$on("show", function(){
-    $scope._screen.show();
+  $scope.$on("show", function(event, screenname){
+    $scope._screen.show(screenname);
   })
 }

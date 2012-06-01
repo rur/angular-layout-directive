@@ -10,7 +10,7 @@
     var self = this,
         layoutFn,
         triggered = false,
-        layoutScope = $scope,
+        layoutScope = this.layoutScope = $scope,
         children = [],
         childrenByName = {},
         ids = [];
@@ -81,7 +81,8 @@
      * @param {angular.ng.$rootScope.Scope} scope The scope you want to use for layout
      */
     this.setLayoutScope = function(scope){
-      layoutScope = scope;
+      __super.setLayoutScope && __super.setLayoutScope(scope);
+      self.layoutScope = layoutScope = scope;
     }
     
     /**
@@ -129,19 +130,6 @@
       return id;
     }
     
-    /**
-     * hash which stores the methods of this base class, 
-     * makes it a little handier to extend methods in a sub class
-     */
-     var __super = this._super || {};
-     this._super = angular.extend({}, __super, {
-       addChild: self.addChild,
-       layout: self.layout,
-       reflow: self.reflow, 
-       setLayoutScope: self.setLayoutScope, 
-       getUniqueID: self.getUniqueID,
-       validateAndTrim: self.validateAndTrim
-     });
   
     /** 
      * Init function called at some point after instanciation, before use
@@ -155,8 +143,22 @@
       self.layout(self.defaultLayout())
     }
     
-    // defaultLayout() to be implmented by sub-class
-    self.layout(self.defaultLayout());
+    
+    /**
+     * hash which stores the methods of this base class, 
+     * makes it a little handier to extend methods in a sub class
+     */
+     var __super = this._super || {};
+     this._super = angular.extend({}, __super, {
+       init: self.init, 
+       addChild: self.addChild,
+       layout: self.layout,
+       reflow: self.reflow,
+       defaultLayout: self.defaultLayout,
+       setLayoutScope: self.setLayoutScope, 
+       getUniqueID: self.getUniqueID,
+       validateAndTrim: self.validateAndTrim
+     });
     
     // private
     function onChildReflow () {
@@ -222,7 +224,17 @@
      * @param {angular.ng.$rootScope.Scope} scope The scope you want to use for layout
      */
     this.setLayoutScope = function(scope){
-      layoutScope = scope;
+       __super.setLayoutScope && __super.setLayoutScope(scope);
+      self.layoutScope = layoutScope = scope;
+    }
+    
+    /**
+     * Init function called at some point after instanciation, before use
+     */
+    this.init = function(){ 
+     layoutScope.reflow = function(){
+       self.reflow();
+      }
     }
     
     /**
@@ -232,20 +244,12 @@
       var __super = this._super || {};
       this._super = angular.extend({}, __super, {
        reflow: self.reflow, 
+       setLayouScope: self.setLayoutScope, 
        transitionIn: self.transitionIn,
        transitionInComplete: self.transitionInComplete,
        transitionOut: self.transitionOut,
        transitionOutComplete: self.transitionOutComplete
      });
-  
-    /**
-     * Init function called at some point after instanciation, before use
-     */
-    this.init = function(){ 
-     layoutScope.reflow = function(){
-       self.reflow();
-      }
-    }
   }
   LayoutBlockBase.$inject = ["$scope", "$exceptionHandler"];
   
@@ -259,17 +263,29 @@
     var self = this,
         layout = this.layoutScope = $scope.$new(true),
         trans = this.transition = transition(layout, $element);
+    
+    trans.state.config("init", {hidden: true});    
+    trans.state.config("show", {hidden: false}, {onComplete:function(){
+        self.transitionInComplete();
+      }
+    });
+    trans.state.config("hide", {hidden: true}, {onComplete:function(){
+        self.transitionOutComplete();
+      }
+    });   
+    trans.bind({ hidden: "css-hidden"});
+                  
     /**
      * compute the height of this display
      */
     layout.calculateHeight = function () {
-     return layout.height;
+     return layout.hidden ? 0 : layout.height;
     } 
     /**
      * compute the width of this display
      */
     layout.calculateWidth = function () {
-     return layout.width;
+     return layout.hidden ? 0 : layout.width;
     }
     
     ////////////////
@@ -282,6 +298,7 @@
     this.transitionIn = function(){
       layout.transState = "transitioningIn";
       $scope.$broadcast("transitioningIn");
+      trans.state("show");
     }
     
     this.transitionInComplete = function(){
@@ -292,6 +309,7 @@
     this.transitionOut = function(){
       layout.transState = "transitioningOut";
       $scope.$broadcast("transitioningOut");
+      trans.state("hide");
     }
     
     this.transitionOutComplete = function(){
@@ -300,7 +318,7 @@
     }
     
     this.init = function(){
-      
+      trans.state("init");
     }
     
     // make it easier to override these functions
@@ -311,6 +329,9 @@
       transitionOut: self.transitionOut,
       transitionOutComplete: self.transitionOutComplete
     });
+    if(angular.isFunction(self.setLayoutScope)){
+      this.setLayoutScope(layout);
+    }
   }
   LayoutDisplayBase.$inject = ["$scope", "$element", "transition"];
 

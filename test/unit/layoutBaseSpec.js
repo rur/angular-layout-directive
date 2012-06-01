@@ -60,6 +60,35 @@ describe("Layout Base Controllers", function() {
         expect(proto2).toHaveBeenCalled();
         expect(proto1b).not.toHaveBeenCalled();
       }));
+      it("should extend multiple classes in sequence", inject(function($injector) {
+        var init1 = jasmine.createSpy("Ctrl1 Init"),
+            init2 = jasmine.createSpy("Ctrl2 Init"),
+            init3 = jasmine.createSpy("Ctrl3 Init"),
+            ctrl,
+            Ctrl3,
+            Ext;
+        Ctrl1 = function () {
+          this.testval = "test";
+          this.init = init1;
+        }
+        Ctrl1.$inject = ["d3","d2","d1"];
+        Ctrl2 = function () {
+          this.init = init2;
+        }
+        Ctrl2.$inject = ["d1","d2","d3"];
+        Ctrl3 = function () {
+          this.init = init3;
+        }
+        Ctrl3.$inject = [];
+        Ext = layout_component_utils.extendController(Ctrl1, Ctrl2, Ctrl3);
+        expect(Ext.$inject).toEqual(["d3","d2","d1","d1","d2","d3"]);
+        ctrl = $injector.instantiate(Ext);
+        ctrl.init();
+        expect(init1).toHaveBeenCalled();
+        expect(init2).toHaveBeenCalled();
+        expect(init3).toHaveBeenCalled();
+        expect(ctrl.testval).toEqual("test");
+      }));
     });
   });
   describe("LayoutContainerBase", function() {
@@ -85,6 +114,10 @@ describe("Layout Base Controllers", function() {
       expect(scope.childrenByName).toEqual({});
     });
     
+    it("should have a layoutScope property", function() {
+      expect(ctrl.layoutScope).toEqual(scope);
+    });
+    
     it("should add a child returning the name", function() {
       var child = scope.$new(true), // isolated scope
           name = "testChildName";
@@ -106,6 +139,10 @@ describe("Layout Base Controllers", function() {
       expect(onArgs[0]).toEqual("reflow");
       (onArgs[1])();
       expect(ctrl.layout).toHaveBeenCalled();
+    });
+    
+    it("should have a default layout function which does nothing", function() {
+      expect(ctrl.defaultLayout()).toEqual(angular.noop);
     });
     
     it("should set and trigger the layout function", function() {
@@ -141,6 +178,12 @@ describe("Layout Base Controllers", function() {
     it("should have a _super object with a reference to its methods", function() {
       expect(ctrl._super.addChild).toEqual(ctrl.addChild);
       expect(ctrl._super.layout).toEqual(ctrl.layout);
+      expect(ctrl._super.defaultLayout).toEqual(ctrl.defaultLayout);
+      expect(ctrl._super.setLayoutScope).toEqual(ctrl.setLayoutScope);
+      expect(ctrl._super.reflow).toEqual(ctrl.reflow);
+      expect(ctrl._super.getUniqueID).toEqual(ctrl.getUniqueID);
+      expect(ctrl._super.validateAndTrim).toEqual(ctrl.validateAndTrim);
+      expect(ctrl._super.init).toEqual(ctrl.init);
     });
 
     it("should add a reflow function to the layout scope", function() {
@@ -148,6 +191,12 @@ describe("Layout Base Controllers", function() {
       spyOn(ctrl, "reflow");
       scope.reflow();
       expect(ctrl.reflow).toHaveBeenCalledWith();
+    });
+    
+    it("should set the layout scope", function() {
+      var newScope = jasmine.createSpyObj("Layout Scope Spy", ["$emit" , "$watch"])
+      ctrl.setLayoutScope(newScope);
+      expect(ctrl.layoutScope).toEqual(newScope);
     });
     
     describe("validateAndTrim", function() {
@@ -218,20 +267,32 @@ describe("Layout Base Controllers", function() {
       });      
     });
     it("should set the layout scope", function() {
-      var newScope = scope.$new(true);
+      var newScope = jasmine.createSpyObj("Layout Scope Spy", ["$emit" , "$watch"])
       ctrl.setLayoutScope(newScope);
-      spyOn(newScope, "$emit");
-      spyOn(newScope, "$watch");
+      expect(ctrl.layoutScope).toEqual(newScope);
       ctrl.reflow();
       expect(newScope.$emit).toHaveBeenCalledWith("reflow");
       ctrl.addReflowWatcher("test");
-      expect(newScope.$watch).toHaveBeenCalled();
+      expect(newScope.$watch).toHaveBeenCalledWith("test", jasmine.any(Function) );
     });
     it("should add a reflow function to the layout scope", function() {
       expect(angular.isFunction(scope.reflow)).toBeTruthy();
       spyOn(ctrl, "reflow");
       scope.reflow();
       expect(ctrl.reflow).toHaveBeenCalledWith();
+    });
+    it("should call _super reflow function", function() {
+      var reflowSpy = jasmine.createSpy("Super Reflow Spy"),
+          ctrl2;
+      function TestClass(){
+        this._super = {
+          reflow: reflowSpy 
+        }
+        injector.invoke(LayoutContainerBase, this, {$scope: scope});
+      }
+      ctrl2 = new TestClass();
+      ctrl2.reflow();
+      expect(reflowSpy).toHaveBeenCalled();
     });
   });
   describe("LayoutDisplayBase", function() {
@@ -258,6 +319,11 @@ describe("Layout Base Controllers", function() {
       }
       ctrl = injector.instantiate(LayoutDisplayBase, locals);
       ctrl.init();
+      // // Custom matchers
+      // this matcher allows you to pass a function which is called on its matching argument
+      this.addMatchers({
+          toHaveBeenCalledWithAndTest: toHaveBeenCalledWithAndTest
+        });
     }));
     it("should instanciate Layout display base ", function() {
       expect(ctrl).not.toBeNull();
@@ -267,11 +333,41 @@ describe("Layout Base Controllers", function() {
       expect(scope.$new).toHaveBeenCalledWith(true);
       expect(ctrl.layoutScope).toEqual(layoutScope);
     });
-    it("should create and configure the transition object", function() {
+    it("should create the transition object", function() {
       expect(transService).toHaveBeenCalledWith(layoutScope, element);
       expect(ctrl.transition).toEqual(transition);
     });
-    
+    it("should create and configure the transitions", function() {
+      // setup
+      var args;
+      spyOn(ctrl, "transitionInComplete");
+      spyOn(ctrl, "transitionOutComplete");
+      var checkOnComplete = function(args){
+        if( args && angular.isFunction(args["onComplete"])){
+          args["onComplete"]();
+          return true;
+        }
+        return false;
+      }
+      // assertions
+      expect(transition.bind).toHaveBeenCalledWith({ hidden: "css-hidden"});
+      expect(transition.state.config).toHaveBeenCalledWith("init", {hidden: true});
+      expect(transition.state.config)
+        .toHaveBeenCalledWithAndTest("show", {hidden: false}, checkOnComplete);
+      expect(transition.state.config)
+        .toHaveBeenCalledWithAndTest("hide", {hidden: true}, checkOnComplete);
+      expect(ctrl.transitionInComplete).toHaveBeenCalled();
+      expect(ctrl.transitionOutComplete).toHaveBeenCalled();
+    });
+    it("should add widht and height calculations methods to layoutScope", function() {
+      layoutScope.height = 100;
+      layoutScope.width = 120;
+      expect(layoutScope.calculateHeight()).toEqual(100);
+      expect(layoutScope.calculateWidth()).toEqual(120);
+      layoutScope.hidden = true;
+      expect(layoutScope.calculateHeight()).toEqual(0);
+      expect(layoutScope.calculateWidth()).toEqual(0);
+    });
     it("should have transition functions which broadcast events", function() {
       expect(layoutScope.transState).toEqual("initializing");
       ctrl.transitionIn();
@@ -294,6 +390,9 @@ describe("Layout Base Controllers", function() {
         transitionOut: ctrl.transitionOut,
         transitionOutComplete: ctrl.transitionOutComplete
       });
+    });
+    it("should have called transition state init", function() {
+      expect(transition.state).toHaveBeenCalledWith("init");
     });
   });
   describe("LayoutContainerBlockBase", function() {
@@ -326,4 +425,33 @@ describe("Layout Base Controllers", function() {
       expect(ctrl.reflow).toHaveBeenCalledWith();
     });
   });
+  // Custom Matcher Function
+  var toHaveBeenCalledWithAndTest = function(){
+    var spy = this.actual,
+               expected = Array.prototype.slice.call(arguments),
+               allArgs = spy.argsForCall,
+               args,
+               arg,
+               match = false;
+     for (var i=0; i < allArgs.length; i++) {
+       args = allArgs[i];
+       if(args.length == expected.length){
+         for (var j=0; j < args.length; j++) {
+           arg = args[j];
+           if(angular.isFunction(expected[j])){
+             match = (expected[j])(arg);
+           } else {
+             match = angular.equals(arg, expected[j]); 
+           }
+           if(!match) break;
+         };
+       }
+       if(match) break;
+     };
+    this.message = function(){
+              return "expected "+spy.identity+" to have been called with type "+expected+
+                     " but it was called with the following: "+allArgs;
+            }
+    return match;
+  }
 });

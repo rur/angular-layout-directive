@@ -42,7 +42,7 @@ angular.module('myApp.directives', [])
           var layout = controllers[0],
               block = controllers[1],
               name = scope.name = layout.addChild(scope, iAttrs.withName),
-              layoutScope = scope.layout = layout.layoutScope;
+              layoutScope = layout.layoutScope;
           // Init
           block.init();
         }
@@ -56,7 +56,7 @@ angular.module('myApp.directives', [])
       return {
         restrict:"EA",
         scope:true,
-        require:["^aBlock","aScreen"],
+        require:["^aLayout", "^aBlock", "aScreen"],
         controller: ScreenDirectiveCtrl,
         //////////////////
         // COMPILE
@@ -67,46 +67,47 @@ angular.module('myApp.directives', [])
           // LINK
           return function(scope, iElement, iAttrs, controllers){
             // properties
-            var screen = controllers[1],
-                block = controllers[0],
+            var screen  = controllers[2],
+                block   = controllers[1],
+                layout  = controllers[0],
                 screenScope = scope._screen = screen.layoutScope,
-                blockScope = scope._block = screenScope.block = block.layoutScope,
-                layoutScope,
+                blockScope  = scope._block  = block.layoutScope,
+                layoutScope = scope._block  = layout.layoutScope,
                 name = screenScope.name = block.addChild(screenScope, iAttrs.withName),
-                childScope;
+                childScope,
+                un$watchers = [];
             //
             // Watchers and Listeners
-            // get the root layout scope when it becomes available
-            scope.$evalAsync(function(){
-                layoutScope = scope._layout = blockScope.layout;
-              });
             // add/remove template 
-            screenScope.$watch("displaying()", function(newval, oldval){
+            un$watchers.push( screenScope.$watch("displaying()", function(newval, oldval){
                               if(newval == oldval) return;
                               toggleContent(newval)
-                            });
+                            }));
             // watch the height of the element
-            screenScope.$watch( function(){ return $jQuery(iElement).height(); },
+            un$watchers.push( screenScope.$watch( function(){ return $jQuery(iElement).height(); },
                           function(newval){ 
                             screenScope.height = newval;
-                          } );
+                          } ));
             // watch the width of the element
-            screenScope.$watch( function(){ return $jQuery(iElement).width(); },
+            un$watchers.push(screenScope.$watch( function(){ return $jQuery(iElement).width(); },
                           function(newval){ 
                             screenScope.width = newval;
-                          } );
-            // listen for transitionedOut event to dispose the overlay contents
-            scope.$on("transitionedIn", function(){
-              // screenScope.height = $jQuery(iElement).height();
-              // screenScope.width = $jQuery(iElement).width();
-            });
-            // listen for transitionedOut event to dispose the screen contents
+                          } ));
+            // listeners
             scope.$on("transitionedOut", function(){
               clearContent();
             });
+            scope.$on("$destroy", function(){
+              angular.forEach(un$watchers, function(un$watch){
+                try{
+                  un$watch();
+                } catch(err){}
+              });
+            })
             // 
             // Init
             // if this is first screen registered, show it
+            screen.init();
             if(!blockScope.currentScreen) {
               screenScope.show();
               toggleContent(true);
@@ -157,24 +158,32 @@ angular.module('myApp.directives', [])
            // LINK
            return function(scope, iElement, iAttrs, controllers){
             // properties
-            var overlay, overlayScope, parentScope, name, childScope, masterOverlay;
+            var overlay, 
+                overlayScope, 
+                parentScope, 
+                name, 
+                childScope, 
+                masterOverlay,
+                un$watchers = [];
             // 
-            // get parent controller and
-            // init the parent layout scope
+            // get parent scope
             for (var i=0; i < 3; i++) {
              if(controllers[i]){
                parentScope = (controllers[i]).layoutScope;
              }
             };
             if(!parentScope) $exceptionHandler("No parent scope found!");
-            if(!parentScope.overlay_ids){
+            // init the parent scope to manage overlays
+            if(!parentScope.overlay_init){
               parentScope.overlays_by_id = {};
               parentScope.overlay_ids = [];
               parentScope.overlay = angular.bind( parentScope, function(name){
                name = name || this.currentOverlay || this.overlay_ids[0];
                return this.overlays_by_id[name];
               });
+              parentScope.overlay_init = true;
             }
+            // 
             // wire up properties
             scope._parent = parentScope;
             overlay = controllers[3];
@@ -185,36 +194,39 @@ angular.module('myApp.directives', [])
              //
              // Watchers and Listeners
              // add/remove template 
-             overlayScope.$watch( "displaying()", 
+             un$watchers.push(overlayScope.$watch( "displaying()", 
                           function(newval, oldval){
                              if(newval == oldval) return;
                              toggleContent(newval)
-                           });
+                           }));
              // watch the height of the element
-             parentScope.$watch( "height",
+             un$watchers.push(parentScope.$watch( "height",
                            function(newval){ 
                              overlayScope.height = newval;
-                           } );
+                           } ));
              // watch the width of the element
-             parentScope.$watch( "width",
+             un$watchers.push(parentScope.$watch( "width",
                            function(newval){ 
                              overlayScope.width = newval;
-                           } );
-              // listen for transitionedOut event to dispose the overlay contents
-              scope.$on("transitionedIn", function(){
+                           }));
+             // listen for transitionedOut event to dispose the overlay contents
+             un$watchers.push(parentScope.$watch("trasnState", function(){
                 overlayScope.height = parentScope.height;
                 overlayScope.width = parentScope.width;
-              });
+              }));
              // listen for transitionedOut event to dispose the overlay contents
-             scope.$on("transitionedOut", function(){
-               clearContent(); 
-             });
+             scope.$on("transitionedOut", clearContent);
              scope.$on("$destroy", function(){
                var ids =  parentScope.overlay_ids;
                clearContent(); 
                delete parentScope.overlays_by_id[name];
                ids.splice(ids.indexOf(name), 1);
                parentScope.currentOverlay = null;
+               angular.forEach(un$watchers, function(un$watch){
+                try{
+                  un$watch();
+                }catch(err){}
+               });
              });
              // 
              // Init
@@ -250,55 +262,73 @@ angular.module('myApp.directives', [])
       return{
         restrict: "EA",
         controller: OverlayPanelDirectiveCtrl,
+        //////////////
+        // LINK
         link: function(scope, elm, attrs, ctrl) {
           var panel = scope._panel,
-              responsiveness = !isNaN(attrs.responsiveness) ? Number(attrs.responsiveness) : 300,
-              resizeCount = 0;
-          scope._overlay.$watch("width+'~'+height", function(){
+              responsiveness = !isNaN(attrs.responsiveness) ? Number(attrs.responsiveness) : 50,
+              resizeCount = 0,
+              un$watchers = [];
+          // watchers
+          un$watchers.push(scope._overlay.$watch("width+'~'+height", function(){
             if(scope._overlay.transState == "transitionedIn") panel.reposition();
-          });
-          panel.$watch("width+'~'+height+'~'+align", function(){
+          }));
+          un$watchers.push(panel.$watch("width+'~'+height+'~'+align", function(){
             panel.reposition();
-          })
-          scope.$watch(function(){
-              return $jQuery(elm).height();
-            },
+          }));
+          un$watchers.push(scope.$watch(function(){ return $jQuery(elm).height(); },
             function(newval){
               if(panel.transState == "transitionedIn") panel.height = newval;
             }
-          );
-          scope.$watch(function(){ return $jQuery(elm).width(); },
+          ));
+          un$watchers.push(scope.$watch(function(){ return $jQuery(elm).width(); },
             function(newval){
               if(panel.transState == "transitionedIn") panel.width = newval;
             }
-          );
-          scope.$on("transitionedIn", function () {
-            panel.width = $jQuery(elm).width();
-            panel.height = $jQuery(elm).height();
-            panel.reposition();
+          ));
+          un$watchers.push(scope._overlay.$watch("transState",function(newval){
+            switch(newval){
+              case "transitionedIn":
+                panel.width = $jQuery(elm).width();
+                panel.height = $jQuery(elm).height();
+                panel.reposition();
+                elm.css("top", panel.y);
+                elm.css("left", panel.x);
+                break;
+            }
+          }));
+          // listeners
+          scope.$on("transitioningOut", function(){
+            toggleDisplay(false);
           })
-          scope._overlay.$watch("displaying()", function(newval, oldval){
-            if(oldval == newval) return;
-            else if (newval) toggleBinding(true);
-            else toggleBinding();
+          scope.$on("$dispose", function(){
+            toggleDisplay(false);
+            angular.forEach(un$watchers, function(un$watch){
+              try{
+                un$watch();
+              } catch(err){}
+            });
           })
           // init
-          toggleBinding(true);
           ctrl.init();
+          // show it
+          toggleDisplay(true);
           // 
           // private
-          function toggleBinding (bind) {
-            if(bind){
+          function toggleDisplay (show) {
+            if(show){
               $jQuery($window).bind("resize", updateSize);
+              ctrl.transitionIn();
             } else {
               $jQuery($window).unbind("resize", updateSize);
+              ctrl.transitionOut();
             }
           }
           function updateSize () {
             $timeout((function(c){
               return function(){
                 if(c < resizeCount) return;
-                scope._parent.$digest();
+                scope._parent.$apply();
               }
             })(++resizeCount), responsiveness, false);
           }
@@ -324,12 +354,12 @@ angular.module('myApp.directives', [])
                 width: "slidey-width",
                 height: "slidey-height",
                 opacity: "slidey-opacity",
-                "hidden[height]": "slidey-hide-height",
-                "hidden[fade]": "slidey-hide-fade"
+                // TODO: implement these
+                // "hidden[height]": "slidey-hide-height",
+                // "hidden[fade]": "slidey-hide-fade"
               };
-          // init
           angular.forEach(controllers,function(controller){
-            if(controller == undefined) return;
+            if(!angular.isDefined(controller)) return;
             controller.transition.addSuite(BeSlideyTransitionSuite); // see layout.js
             angular.forEach(props, function(val){
               if(bindings.hasOwnProperty(val)){

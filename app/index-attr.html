@@ -6,9 +6,9 @@
   <link rel="stylesheet" href="css/app.css"/>
 </head>
 <body ng-controller="AppCtrl">
-   <input type="button" name="show" value="Show Block" id="show" ng-click="$broadcast('show')">
+   <input type="button" name="show" value="Show Screen 2" id="show" ng-click="$broadcast('show', 'screen-2')">
   <div a-layout>
-   <div a-block id="top" be-slidey="height">
+   <div a-block id="top">
       <div a-screen with-name="screen" ng-controller="SubCtrl">
          <div>
             <p>Test = {{test}}</p>
@@ -27,14 +27,23 @@
             <br>
             <br>
             <br>
+            <p><a ng-click="_screen.show('screen')">Show Screen</a></p>
+            <br>
+            <br>
          </div>
          <div an-overlay with-name="overlayA" class="my-overlay">
-            <div an-overlay-panel="center" be-slidey="x" class="my-panel">
+            <div an-overlay-panel="right" be-slidey="x,y" class="my-panel">
                <p>Hello Overlay</p>
                <p>panel trans state = {{_panel.transState}}</p>
+               <p>overlay trans state = {{_overlay.transState}}</p>
                <p><input type="button" ng-click="_overlay.show('overlayB')" value="Show overlay B"></p>
                <p><input type="button" ng-click="_overlay.hide()" value="Hide Overlay"></p>
                <p><input type="button" ng-click="_parent.hide()" value="Hide Parent"></p>
+            </div>
+            <div an-overlay-panel="left" ng-init="test = ['a','b','c','d']" class="my-panel" style="height: 100%; width: 200px;">
+               <ul>
+                  <li ng-repeat="letter in test">{{letter}}</li>
+               </ul>
             </div>
             <div class="back"></div>
          </div>
@@ -46,7 +55,7 @@
          </div>
       </div>
    </div>
-   <div a-block id="bottom" id="other-block" be-slidey="y,height">
+   <div a-block id="bottom" id="other-block">
       <div a-screen with-name="thisScreen">
          <div ng-click="_screen.show('otherScreen')">
             <p>asdf</p>

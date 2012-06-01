@@ -1,4 +1,4 @@
-function BlockDirectiveCtrl ($scope, $element, $attrs, transition, augmentController, $defer) {
+function BlockDirectiveCtrl ($scope, $element, $attrs, transition, augmentController) {
   var self = this,
       trans = this.transition = transition($scope, $element),
       extCtrl = $attrs["withController"],
