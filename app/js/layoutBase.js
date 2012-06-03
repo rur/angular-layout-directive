@@ -297,24 +297,20 @@
     
     this.transitionIn = function(){
       layout.transState = "transitioningIn";
-      $scope.$broadcast("transitioningIn");
       trans.state("show");
     }
     
     this.transitionInComplete = function(){
       layout.transState = "transitionedIn";
-      $scope.$broadcast("transitionedIn");
     }
     
     this.transitionOut = function(){
       layout.transState = "transitioningOut";
-      $scope.$broadcast("transitioningOut");
       trans.state("hide");
     }
     
     this.transitionOutComplete = function(){
       layout.transState = "transitionedOut";
-      $scope.$broadcast("transitionedOut");
     }
     
     this.init = function(){

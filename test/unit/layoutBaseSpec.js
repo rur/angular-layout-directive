@@ -337,7 +337,7 @@ describe("Layout Base Controllers", function() {
         injector,
         element;
     beforeEach(inject(function($rootScope, $injector) {
-      scope = jasmine.createSpyObj("Scope Spy", ["$new", "$broadcast"]);
+      scope = jasmine.createSpyObj("Scope Spy", ["$new"]);
       layoutScope = {name: "layoutScope"};
       scope.$new.andReturn(layoutScope);
       injector = $injector;
@@ -404,16 +404,12 @@ describe("Layout Base Controllers", function() {
     it("should have transition functions which broadcast events", function() {
       expect(layoutScope.transState).toEqual("initializing");
       ctrl.transitionIn();
-      expect(scope.$broadcast).toHaveBeenCalledWith("transitioningIn");
       expect(layoutScope.transState).toEqual("transitioningIn");
       ctrl.transitionInComplete();
-      expect(scope.$broadcast).toHaveBeenCalledWith("transitionedIn");
       expect(layoutScope.transState).toEqual("transitionedIn");
       ctrl.transitionOut();
-      expect(scope.$broadcast).toHaveBeenCalledWith("transitioningOut");
       expect(layoutScope.transState).toEqual("transitioningOut");
       ctrl.transitionOutComplete();
-      expect(scope.$broadcast).toHaveBeenCalledWith("transitionedOut");
       expect(layoutScope.transState).toEqual("transitionedOut");
     });
     it("should provide functions in a _super hash", function() {

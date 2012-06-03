@@ -452,27 +452,6 @@ describe("layout component", function() {
       expect(ctrl.layoutScope).toEqual(_overlay);
     });
     
-    it("should call transition init", function() {
-      expect(transition.state).toHaveBeenCalledWith("init");
-    });
-    
-    it("should have transition functions which broadcast events", function() {
-      spyOn(scope, "$broadcast");
-      expect(_overlay.transState).toEqual("initializing");
-      ctrl.transitionIn();
-      expect(scope.$broadcast).toHaveBeenCalledWith("transitioningIn");
-      expect(_overlay.transState).toEqual("transitioningIn");
-      ctrl.transitionInComplete();
-      expect(scope.$broadcast).toHaveBeenCalledWith("transitionedIn");
-      expect(_overlay.transState).toEqual("transitionedIn");
-      ctrl.transitionOut();
-      expect(scope.$broadcast).toHaveBeenCalledWith("transitioningOut");
-      expect(_overlay.transState).toEqual("transitioningOut");
-      ctrl.transitionOutComplete();
-      expect(scope.$broadcast).toHaveBeenCalledWith("transitionedOut");
-      expect(_overlay.transState).toEqual("transitionedOut");
-    });
-    
     it("should augment the controller", function() {
       expect(augmentCtrl).toHaveBeenCalledWith( "SomeController",
                                                 ctrl,
@@ -481,15 +460,6 @@ describe("layout component", function() {
                                                   $attrs: attrs, 
                                                   $trans: transition });
     });
-    
-    // it("should provide functions in a _super hash", function() {
-    //   expect(ctrl._super).toEqual({
-    //     transitionIn: ctrl.transitionIn,
-    //     transitionInComplete: ctrl.transitionInComplete,
-    //     transitionOut: ctrl.transitionOut,
-    //     transitionOutComplete: ctrl.transitionOutComplete
-    //   });
-    // });
   });
   /**
    * OverlayPanelDirectiveCtrl Specs
