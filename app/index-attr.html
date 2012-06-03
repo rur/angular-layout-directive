@@ -6,7 +6,8 @@
   <link rel="stylesheet" href="css/app.css"/>
 </head>
 <body ng-controller="AppCtrl">
-   <input type="button" name="show" value="Show Screen 2" id="show" ng-click="$broadcast('show', 'screen-2')">
+   <input type="button" name="show" value="Show Screen 1" id="show" ng-click="$broadcast('show', 'screen')">
+   <input type="text" name="rootvalue" value="" id="rootvalue" ng-model='rootValue'>
   <div a-layout>
    <div a-block id="top">
       <div a-screen with-name="screen" ng-controller="SubCtrl">
@@ -20,39 +21,34 @@
       <div a-screen with-name="screen-2">
          <div>
             <p>Screen2</p>
+            <p><a ng-click="_screen.show('screen')">Show Other Screen</a></p>
             <br>
-            <p><a ng-click="_screen.overlay('overlayB').show()">Show Block Overlay</a></p>
-            <p><a ng-click="_block.hide()">Hide Block!</a></p>
+            <p><a ng-click="_layout.overlay().show()">Show Layout Overlay</a></p>
+            <p><a ng-click="_block.overlay().show()">Show Block Overlay</a></p>
+            <p><a ng-click="_screen.overlay().show()">Show Screen Overlay</a></p>
             <br>
-            <br>
-            <br>
-            <br>
-            <p><a ng-click="_screen.show('screen')">Show Screen</a></p>
             <br>
             <br>
          </div>
-         <div an-overlay with-name="overlayA" class="my-overlay">
-            <div an-overlay-panel="right" be-slidey="x,y" class="my-panel">
+          <div an-overlay with-name="overlayA" class="my-overlay">
+            <div an-overlay-panel class="my-panel">
                <p>Hello Overlay</p>
-               <p>panel trans state = {{_panel.transState}}</p>
-               <p>overlay trans state = {{_overlay.transState}}</p>
+               <p>{{rootValue}}</p>
                <p><input type="button" ng-click="_overlay.show('overlayB')" value="Show overlay B"></p>
                <p><input type="button" ng-click="_overlay.hide()" value="Hide Overlay"></p>
                <p><input type="button" ng-click="_parent.hide()" value="Hide Parent"></p>
             </div>
-            <div an-overlay-panel="left" ng-init="test = ['a','b','c','d']" class="my-panel" style="height: 100%; width: 200px;">
-               <ul>
-                  <li ng-repeat="letter in test">{{letter}}</li>
-               </ul>
-            </div>
-            <div class="back"></div>
+            <div ng-click="_overlay.hide()" class="back"></div>
          </div>
-         <div an-overlay with-name="overlayB" class="my-overlay">
-            <p>Hello Overlay B!</p>
-            <p><input type="button" ng-click="_overlay.show('overlayA')" value="Show overlay A"></p>
+      </div>
+       <div an-overlay with-name="overlayA" class="my-overlay">
+         <div an-overlay-panel class="my-panel">
+            <p>Hello Overlay</p>
+            <p>{{rootValue}}</p>
+            <p><input type="button" ng-click="_overlay.show('overlayB')" value="Show overlay B"></p>
             <p><input type="button" ng-click="_overlay.hide()" value="Hide Overlay"></p>
-            <div class="back"></div>
          </div>
+         <div ng-click="_overlay.hide()" class="back"></div>
       </div>
    </div>
    <div a-block id="bottom" id="other-block">
@@ -68,6 +64,24 @@
             <p>asdfasdfsdf</p>
          </div>
       </div>
+   </div>
+    <div an-overlay with-name="overlayA" class="my-overlay">
+      <div an-overlay-panel class="my-panel">
+         <p>Hello Overlay</p>
+         <p>{{rootValue}}</p>
+         <p><input type="button" ng-click="_overlay.show('overlayB')" value="Show overlay B"></p>
+         <p><input type="button" ng-click="_overlay.hide()" value="Hide Overlay"></p>
+      </div>
+      <div ng-click="_overlay.hide()" class="back"></div>
+   </div>
+    <div an-overlay with-name="overlayB" class="my-overlay">
+      <div an-overlay-panel be-slidey="height,x,y" class="my-panel">
+         <p>Hello Overlay B</p>
+         <p>{{rootValue}}</p>
+         <p><input type="button" ng-click="_overlay.show('overlayA')" value="Show overlay A"></p>
+         <p><input type="button" ng-click="_overlay.hide()" value="Hide Overlay"></p>
+      </div>
+      <div ng-click="_overlay.hide()" class="back"></div>
    </div>
 </div>
   <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>

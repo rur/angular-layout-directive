@@ -93,6 +93,7 @@ function BlockDirectiveCtrl ($scope, $element, $attrs, transition, augmentContro
   $scope.calculateWidth = function(){
     return $scope.width;
   }
+    
   /**
     * The default reflow layout function factory method
     */
@@ -124,9 +125,9 @@ function BlockDirectiveCtrl ($scope, $element, $attrs, transition, augmentContro
   }
   
   // make it easier to override these functions
-  this.__super = this._super;
-  this._super = angular.extend({}, this._super||{}, {
-    init: self.init
+  var __super = this._super || {};
+  this._super = angular.extend({}, __super, {
+    defaultLayout: self.defaultLayout
   });
 }
 BlockDirectiveCtrl.$inject = ["$scope", "$element", "$attrs", "transition", "augmentController"];
@@ -146,6 +147,7 @@ function ScreenDirectiveCtrl($scope, $element, $attrs, augmentController){
   // 
   this.addReflowWatcher("displaying()");
   this.addReflowWatcher("calculateHeight()");
+  this.addReflowWatcher("calculateWidth()");
   // 
   $element.css("width","100%");
   $element.css("display","block");
@@ -191,16 +193,12 @@ function ScreenDirectiveCtrl($scope, $element, $attrs, augmentController){
   // make it easier to override these functions
   var __super = this._super || {};
   this._super = angular.extend({}, __super, {
-    init: self.init, 
-    transitionIn: self.transitionIn,
-    transitionInComplete: self.transitionInComplete,
-    transitionOut: self.transitionOut,
-    transitionOutComplete: self.transitionOutComplete
+    // add any instance methods as properties of this hash
   });
 }
 ScreenDirectiveCtrl.$inject = ["$scope", "$element", "$attrs", "augmentController"]
 
-function OverlayDirectiveCtrl ($scope, $attrs, $element, augmentController) {
+function OverlayDirectiveCtrl ($scope, $attrs, $element, augmentController, $exceptionHandler) {
   var self = this,
       overlay = this.layoutScope,
       trans = this.transition,
@@ -220,7 +218,9 @@ function OverlayDirectiveCtrl ($scope, $attrs, $element, augmentController) {
   //
   overlay.show = function(name){
     var name = name || overlay.name;
-    $scope._parent.currentOverlay = name;
+    if($scope._parent.overlay_register.contains(name)){
+      $scope._parent.currentOverlay = name;
+    }
   }
   // 
   overlay.hide = function(){
@@ -234,6 +234,30 @@ function OverlayDirectiveCtrl ($scope, $attrs, $element, augmentController) {
   // 
   // init function get called during linking phase
   this.init = function(){
+    ////////////////
+    // Setup parent scope for overlays
+    //// This adds propeties and functions to the parent
+    //// layout scope to manage overlays
+    var parentScope = $scope._parent;
+    if (!parentScope.overlay) {
+      parentScope.overlay_register = layout_component_utils.new_registry("Overlay Register");
+      parentScope.overlay = function(name){
+        var reg = this.overlay_register;
+        if(angular.isDefined(name)) {
+          if( !reg.contains(name)) $exceptionHandler("Overlay with name'"+name+"' not found");
+          return reg.get(name)
+        }else if(angular.isString(this.currentOverlay)){
+          if( !reg.contains(this.currentOverlay)) $exceptionHandler("The current overlay value is not a registered overlay name");
+          return reg.get(this.currentOverlay)
+        }else{
+          return reg.first();
+        }
+      }
+    }
+    // register this overlay
+    overlay.name = self.getUniqueID( $attrs.withName, parentScope.overlay_register.ids, "overlay_");
+    parentScope.overlay_register.add(overlay.name, overlay);
+    // 
     // augment controller
     if(angular.isString(extCtrl) && extCtrl.length > 0) {
       locals = { $scope: $scope, 
@@ -247,11 +271,10 @@ function OverlayDirectiveCtrl ($scope, $attrs, $element, augmentController) {
   // make it easier to override these functions
   var __super = this._super || {};
   this._super = angular.extend({}, __super, {
-    init: self.init
   });
 }
 
-OverlayDirectiveCtrl.$inject = ["$scope", "$attrs", "$element", 'augmentController'];
+OverlayDirectiveCtrl.$inject = ["$scope", "$attrs", "$element", 'augmentController', "$exceptionHandler"];
 
 function OverlayPanelDirectiveCtrl ($scope, $element, $attrs) {
   var self = this,
@@ -316,6 +339,7 @@ function OverlayPanelDirectiveCtrl ($scope, $element, $attrs) {
   }
 }
 OverlayPanelDirectiveCtrl.$inject = ["$scope", "$element", "$attrs"];
+
 
 /**
  * Be Slidey Transition Suite

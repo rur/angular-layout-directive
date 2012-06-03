@@ -90,6 +90,39 @@ describe("Layout Base Controllers", function() {
         expect(ctrl.testval).toEqual("test");
       }));
     });
+    describe("#new_registry", function() {
+      var reg;
+      beforeEach(function() {
+        reg = layout_component_utils.new_registry("Test")
+      });
+      
+      it("should create a new Registry object", function() {
+        expect(reg).toBeDefined();
+        expect(reg).not.toBeNull();
+      });
+      
+      it("should have all the methods and properties it needs", function() {
+        expect(reg.name).toEqual("Test");
+        expect(reg.ids).toEqual(jasmine.any(Array));
+        expect(reg.by_id).toEqual(jasmine.any(Object));
+        expect(reg.clear).toEqual(jasmine.any(Function));
+        expect(reg.contains).toEqual(jasmine.any(Function));
+        expect(reg.add).toEqual(jasmine.any(Function));
+        expect(reg.get).toEqual(jasmine.any(Function));
+        expect(reg.first).toEqual(jasmine.any(Function));
+      });
+
+      it("should manage registered values and keys", function() {
+        var mock = {mock: "testvalue"}
+        reg.add("test", mock);
+        expect(reg.contains("test")).toBeTruthy();
+        expect(reg.get("test")).toEqual(mock);
+        expect(reg.first()).toEqual(mock);
+        reg.clear();
+        expect(reg.ids).toEqual([]);
+        expect(reg.by_id).toEqual({});
+      });
+    });
   });
   describe("LayoutContainerBase", function() {
     var ctrl,
@@ -359,7 +392,7 @@ describe("Layout Base Controllers", function() {
       expect(ctrl.transitionInComplete).toHaveBeenCalled();
       expect(ctrl.transitionOutComplete).toHaveBeenCalled();
     });
-    it("should add widht and height calculations methods to layoutScope", function() {
+    it("should add width and height calculations methods to layoutScope", function() {
       layoutScope.height = 100;
       layoutScope.width = 120;
       expect(layoutScope.calculateHeight()).toEqual(100);

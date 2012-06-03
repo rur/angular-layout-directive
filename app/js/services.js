@@ -3,9 +3,10 @@
 /* Services */
 
 angular.module('myApp.services', [])
-  .factory("$jQuery", function(){
-    return jQuery || angular.element;
-  })
+  .factory("$jQuery", [ "$exceptionHandler", function($exceptionHandler){
+    if(!jQuery) $exceptionHandler("jQuery is required by this application");
+    return jQuery;
+  }])
   /**
    * Augment Controller service
    */
@@ -26,6 +27,30 @@ angular.module('myApp.services', [])
       return $injector.invoke(Class, controller, locals);
     }
   }])
+  /**
+   * Window resize watcher service binds a listener to the window resize event.
+   * When it fires it calls $apply on the root scope. 
+   * 
+   * This is usefull where scope values depend on the size of the window
+   */
+   .factory("windowResizeWatcher", [ "$window", "$rootScope", "$timeout", function($window, $rootScope, $timeout){
+     var resizeCount = 0,
+         _resp;
+     function onResize () {
+        $timeout((function(count){
+          return function(){
+            if(count < resizeCount) return;
+            $rootScope.$apply(resizeCount);
+          }
+        })(++resizeCount), _resp, false);
+     };
+     return function( responsiveness ){
+       responsiveness = responsiveness || 50;
+       if(_resp == responsiveness) return;
+       angular.element($window).unbind("resize", onResize );
+       angular.element($window).bind("resize", onResize );
+     };
+   }])
   /**
    * Transition service
    */
@@ -152,8 +177,10 @@ angular.module('myApp.services', [])
        * @return {Transition} Newly created transition object
        */
        // TODO: This could be used to provide centralised control of transitions, figure out how/if this would be useful.
+       var transId = 0;
       function transitionService (scope, element) {
         var transition = new Transition( scope, element );
+        transition.id = "transition_"+(++transId);
         for (var i=0; i < defaultSuites.length; i++) {
           var suite = defaultSuites[i];
           transition.addSuite(suite);
@@ -176,7 +203,8 @@ angular.module('myApp.services', [])
             doFire = false,
             fireParams,
             un$watchers = [],
-            un$watchersHash = {};
+            un$watchersHash = {},
+            disposed = false;
         
         //////////////////////////
         // Initialisation
@@ -244,9 +272,11 @@ angular.module('myApp.services', [])
           angular.forEach(un$watchers, function(un$watch){
             un$watch();
           });
+          un$watchers = null;
           fireParams = null;
           scope = null;
           element = null;
+          disposed = true;
         }
         
         /**

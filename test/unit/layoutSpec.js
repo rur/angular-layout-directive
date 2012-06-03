@@ -20,7 +20,10 @@ describe("layout component", function() {
     // document.createElement needed for IE7, for some reason
     element = angular.element(document.createElement("div"));
   }));
-  
+  /**
+   * LayoutDirectiveCtrl Specs
+   * 
+   */
   describe("LayoutDirectiveCtrl", function() {
     var ctrl;
     beforeEach(function() {
@@ -45,10 +48,6 @@ describe("layout component", function() {
       expect(ctrl.transition).toEqual(transition);
       expect(transition.state.config).toHaveBeenCalledWith("init", {height: 0});
       expect(transition.bind).toHaveBeenCalledWith("height", "css-height" );
-    });
-    
-    it("should provide access to the layout scope", function() {
-      expect(ctrl.layoutScope).toEqual(scope);
     });
     
     it("should set the required css formatting", function() {
@@ -124,8 +123,14 @@ describe("layout component", function() {
        scope.$digest();
        expect(flowSpy.callCount).toEqual(1);
      });
+     it("should have a super object with instance methods", function() {
+       expect(ctrl._super.defaultLayout).toEqual(ctrl.defaultLayout);
+     });
   });
-
+/**
+ * BlockDirectiveCtrl specs
+ * 
+ */
   describe("BlockDirectiveCtrl", function() {
     var ctrl, reflowSpy;
     beforeEach(function() {
@@ -149,6 +154,24 @@ describe("layout component", function() {
     it("should provide access to its scope", function() {
       expect(ctrl.layoutScope).toEqual(scope);
     });
+    
+    it("should add reflow watchers for dimensions", function() {
+      expect(scope.$watch.argsForCall[0][0]).toEqual("calculateHeight()");
+      expect(scope.$watch.argsForCall[1][0]).toEqual("calculateWidth()");
+      spyOn(ctrl, "reflow");
+      scope.$digest();
+      expect(ctrl.reflow).toHaveBeenCalledWith();
+      expect(ctrl.reflow.callCount).toBe(2);
+      scope.$digest();
+      scope.height = 200;
+      scope.height = 300;
+      scope.$digest();
+      expect(ctrl.reflow.callCount).toBe(3);
+      scope.height = 200;
+      scope.width = 300;
+      scope.$digest();
+      expect(ctrl.reflow.callCount).toBe(5);
+    });
       
     it("should create and configure the transition", function() {
       expect(transService).toHaveBeenCalledWith(scope, element);
@@ -166,6 +189,8 @@ describe("layout component", function() {
       html = el.html();
       expect(html).toMatch(/width: 100%/i);
       expect(html).toMatch(/position: absolute/i);
+      expect(html).toMatch(/overflow(-x)?: hidden/i);
+      expect(html).toMatch(/overflow(-y)?: hidden/i);
     });
     
     it("should augment the controller", function() {
@@ -192,6 +217,7 @@ describe("layout component", function() {
 
     it("should add and remove a reflow watcher", function() {
       expect(function(){ctrl.addReflowWatcher()}).toThrow("You can only add a string expression as a reflow watcher");
+      scope.$digest();
       spyOn(ctrl, "reflow");
       ctrl.addReflowWatcher("test");
       scope.$digest();
@@ -222,12 +248,22 @@ describe("layout component", function() {
     });
     
     it("should initialize setting the init transition state and the height reflow watcher", function() {
-      expect(scope.$watch.argsForCall[0][0]).toEqual("calculateHeight()");
-      expect(scope.$watch.argsForCall[1][0]).toEqual("calculateWidth()");
-      ctrl.init();
       expect(transition.state).toHaveBeenCalledWith("init");
     });
+    it("should add a calculate width and height function to the scope", function() {
+      scope.width = 150;
+      scope.height = 200;
+      expect(scope.calculateHeight()).toEqual(200);
+      expect(scope.calculateWidth()).toEqual(150);
+    });
+    it("should have a super object with a backup reference to its methods", function() {
+      expect(ctrl._super.defaultLayout).toEqual(ctrl.defaultLayout);
+    });
   });
+  /**
+   * ScreenDirectiveCtrl Specs
+   * 
+   */
   describe("ScreenDirectiveCtrl", function() {
     var ctrl, _screen, _block, name;
     beforeEach(function() {
@@ -259,35 +295,6 @@ describe("layout component", function() {
       expect(ctrl).toBeDefined();
     });
     
-    it("should create and configure the transitions", function() {
-      // setup
-      var args;
-      spyOn(ctrl, "transitionInComplete");
-      spyOn(ctrl, "transitionOutComplete");
-      var checkOnComplete = function(args){
-        if( args && angular.isFunction(args["onComplete"])){
-          args["onComplete"]();
-          return true;
-        }
-        return false;
-      }
-      // assertions
-      expect(transService).toHaveBeenCalledWith(_screen, element);
-      expect(ctrl.transition).toEqual(transition);
-      expect(transition.bind).toHaveBeenCalledWith({ hidden: "css-hidden" });
-      expect(transition.state.config).toHaveBeenCalledWith("init", {hidden: true});
-      expect(transition.state.config)
-        .toHaveBeenCalledWithAndTest("show", {hidden: false}, checkOnComplete);
-      expect(transition.state.config)
-        .toHaveBeenCalledWithAndTest("hide", {hidden: true}, checkOnComplete);
-      expect(ctrl.transitionInComplete).toHaveBeenCalled();
-      expect(ctrl.transitionOutComplete).toHaveBeenCalled();
-    });
-    
-    it("should have a scope property with its layout scope", function() {
-      expect(ctrl.layoutScope).toEqual(_screen);
-    });
-    
     it("should set the required css formatting", function() {
       // hack to get test to pass IE7
       var el,
@@ -300,18 +307,22 @@ describe("layout component", function() {
       expect(html).toMatch(/position: absolute/i);
     });
     
-    it("should augment the controller", function() {
-      expect(augmentCtrl).toHaveBeenCalledWith( "SomeController",
-                                                ctrl,
-                                                { $scope: scope, 
-                                                  $element: element, 
-                                                  $attrs: attrs, 
-                                                  $trans: transition });
+    it("should override calculate height and width on the layout scope", function() {
+      _screen.height = 123;
+      _screen.width = 456;
+      expect(_screen.calculateHeight()).toEqual(0);
+      expect(_screen.calculateWidth()).toEqual(0);
+      spyOn(_screen, "displaying").andReturn(true);
+      expect(_screen.calculateHeight()).toEqual(123);
+      expect(_screen.calculateWidth()).toEqual(456);
     });
     
-    it("should create an isolated scope for the screen api", function() {
-      expect(scope.$new).toHaveBeenCalledWith(true);
-      expect(ctrl.layoutScope).toEqual(_screen);
+    it("should implement a displaying method on the layout scope", function() {
+      expect(_screen.displaying()).toBeFalsy();
+      _block.currentScreen = name;
+      expect(_screen.displaying()).toBeTruthy();
+      _block.currentScreen = "somethingElse";
+      expect(_screen.displaying()).toBeFalsy();
     });
     
     it("should add a show method to the screen api", function() {
@@ -330,20 +341,19 @@ describe("layout component", function() {
       expect(_block.currentScreen).toBeNull();
     });
     
-    it("should have transition functions which broadcast events", function() {
-      spyOn(scope, "$broadcast");
-      ctrl.transitionIn();
-      expect(transition.state).toHaveBeenCalledWith("show");
-      expect(scope.$broadcast).toHaveBeenCalledWith("transitioningIn");
-      ctrl.transitionInComplete();
-      expect(scope.$broadcast).toHaveBeenCalledWith("transitionedIn");
-      ctrl.transitionOut();
-      expect(transition.state).toHaveBeenCalledWith("hide");
-      expect(scope.$broadcast).toHaveBeenCalledWith("transitioningOut");
-      ctrl.transitionOutComplete();
-      expect(scope.$broadcast).toHaveBeenCalledWith("transitionedOut");
+    it("should augment the controller", function() {
+      expect(augmentCtrl).toHaveBeenCalledWith( "SomeController",
+                                                ctrl,
+                                                { $scope: scope, 
+                                                  $element: element, 
+                                                  $attrs: attrs, 
+                                                  $trans: transition });
     });
   });
+  /**
+   * OverlayDirectiveCtrl Specs
+   * 
+   */
   describe("OverlayDirectiveCtrl", function() {
     var ctrl, _overlay, _parent, name;
     beforeEach(function() {
@@ -361,7 +371,6 @@ describe("layout component", function() {
       ctrl = injector.instantiate(OverlayDirectiveCtrl, locals);
       ctrl.init();
       // // Custom matchers
-      // this matcher allows you to pass a function which is called on its matching argument
       this.addMatchers({
           toHaveBeenCalledWithAndTest: toHaveBeenCalledWithAndTest
         });
@@ -369,34 +378,6 @@ describe("layout component", function() {
     it("should instanciate OverlayDirectiveCtrl", function() {
       expect(ctrl).not.toBeNull();
       expect(ctrl).toBeDefined();
-    });
-    it("should create a new layout scope", function() {
-      expect(ctrl.layoutScope).toEqual(_overlay);
-    });
-    
-    it("should create and configure the transitions", function() {
-      // setup
-      var args;
-      spyOn(ctrl, "transitionInComplete");
-      spyOn(ctrl, "transitionOutComplete");
-      var checkOnComplete = function(args){
-        if( args && angular.isFunction(args["onComplete"])){
-          args["onComplete"]();
-          return true;
-        }
-        return false;
-      }
-      // assertions
-      expect(transService).toHaveBeenCalledWith(_overlay, element);
-      expect(ctrl.transition).toEqual(transition);
-      expect(transition.bind).toHaveBeenCalledWith({ hidden: "css-hidden"});
-      expect(transition.state.config).toHaveBeenCalledWith("init", {hidden: true});
-      expect(transition.state.config)
-        .toHaveBeenCalledWithAndTest("show", {hidden: false}, checkOnComplete);
-      expect(transition.state.config)
-        .toHaveBeenCalledWithAndTest("hide", {hidden: true}, checkOnComplete);
-      expect(ctrl.transitionInComplete).toHaveBeenCalled();
-      expect(ctrl.transitionOutComplete).toHaveBeenCalled();
     });
     
     it("should set the required css formatting", function() {
@@ -414,46 +395,82 @@ describe("layout component", function() {
       expect(html).toMatch(/overflow(-y)?: hidden/i);
       expect(html).toMatch(/position: absolute/i);
     });
-    it("should add a show method to the overlay layout scope", function() {
-      _overlay.show("test");
-      expect(_parent.currentOverlay).toEqual("test");
-      _overlay.show();
-      expect(_parent.currentOverlay).toEqual(name);
+    
+    it("should configure the parent scope with a Registry and overlay getter, once", function() {
+      var reg = _parent.overlay_register,
+          mock = {mock: "scope"};
+      expect(_parent.overlay).toEqual(jasmine.any(Function));
+      expect(reg.name).toEqual("Overlay Register");
+      reg.add("test", mock);
+      expect(reg.contains("test")).toBeTruthy();
+      expect(reg.get("test")).toEqual(mock);
+      reg.clear();
+      expect(reg.ids).toEqual([]);
+      expect(reg.by_id).toEqual({});
+      expect(reg.contains("test")).toBeFalsy();
+      _parent.overlay_register.value = "not_clobbered";
+      ctrl.init();
+      expect(_parent.overlay_register.value).toEqual("not_clobbered");
     });
-    it("should add a hide method to the overlay layout scope", function() {
-      _overlay.show();
-      _overlay.hide();
-      expect(_parent.currentOverlay).toBeNull();
+    
+    it("should register it", function() {
+      spyOn(_parent.overlay_register, "add");
+      ctrl.init();
+      expect(_parent.overlay_register.add).toHaveBeenCalledWith(_overlay.name, _overlay);
     });
-    it("should add a displaying computed value to the overlay layout scope", function() {
-      expect(_overlay.displaying()).toBeFalsy();
-      _overlay.show();
-      expect(_overlay.displaying()).toBeTruthy();
-      _overlay.hide();
-      expect(_overlay.displaying()).toBeFalsy();
-      _overlay.show("test");
-      expect(_overlay.displaying("test")).toBeTruthy();
-      _overlay.hide();
-      expect(_overlay.displaying("test")).toBeFalsy();
+    
+    describe("overlay control", function() {
+      var reg;
+      beforeEach(function() {
+        reg = _parent.overlay_register;
+      });
+      
+      it("should provide access to this overlay scope", function() {
+        var mock = {mock: "scope"}
+        expect(_parent.overlay()).toEqual(_overlay);
+        reg.add("other", mock);
+        expect(_parent.overlay("other")).toEqual(mock);
+      });
+      
+      it("should provide access to the current overlay scope by default", function() {
+        var mock1 = {mock1: "scope"},
+            mock2 = {mock2: "scope"};
+        reg.add("test1", mock1);
+        reg.add("test2", mock2);
+        _parent.currentOverlay = "test2";
+        expect(_parent.overlay()).toEqual(mock2);
+        _parent.currentOverlay = "test_fail";
+        expect(function(){_parent.overlay();}).toThrow("The current overlay value is not a registered overlay name");
+      });
+      
+      it("should throw an error when the overlay name doesnt exist", function() {
+        expect(function(){_parent.overlay("FAIL")}).toThrow("Overlay with name'FAIL' not found");
+      });
     });
-    it("should have transition functions which broadcast events", function() {
-      spyOn(scope, "$broadcast");
-      ctrl.transitionIn();
-      expect(transition.state).toHaveBeenCalledWith("show");
-      expect(scope.$broadcast).toHaveBeenCalledWith("transitioningIn");
-      ctrl.transitionInComplete();
-      expect(scope.$broadcast).toHaveBeenCalledWith("transitionedIn");
-      ctrl.transitionOut();
-      expect(transition.state).toHaveBeenCalledWith("hide");
-      expect(scope.$broadcast).toHaveBeenCalledWith("transitioningOut");
-      ctrl.transitionOutComplete();
-      expect(scope.$broadcast).toHaveBeenCalledWith("transitionedOut");
-    });
+    
     it("should have its layout scope as a property of the contorller instance", function() {
       expect(ctrl.layoutScope).toEqual(_overlay);
     });
+    
     it("should call transition init", function() {
       expect(transition.state).toHaveBeenCalledWith("init");
+    });
+    
+    it("should have transition functions which broadcast events", function() {
+      spyOn(scope, "$broadcast");
+      expect(_overlay.transState).toEqual("initializing");
+      ctrl.transitionIn();
+      expect(scope.$broadcast).toHaveBeenCalledWith("transitioningIn");
+      expect(_overlay.transState).toEqual("transitioningIn");
+      ctrl.transitionInComplete();
+      expect(scope.$broadcast).toHaveBeenCalledWith("transitionedIn");
+      expect(_overlay.transState).toEqual("transitionedIn");
+      ctrl.transitionOut();
+      expect(scope.$broadcast).toHaveBeenCalledWith("transitioningOut");
+      expect(_overlay.transState).toEqual("transitioningOut");
+      ctrl.transitionOutComplete();
+      expect(scope.$broadcast).toHaveBeenCalledWith("transitionedOut");
+      expect(_overlay.transState).toEqual("transitionedOut");
     });
     
     it("should augment the controller", function() {
@@ -464,7 +481,20 @@ describe("layout component", function() {
                                                   $attrs: attrs, 
                                                   $trans: transition });
     });
+    
+    // it("should provide functions in a _super hash", function() {
+    //   expect(ctrl._super).toEqual({
+    //     transitionIn: ctrl.transitionIn,
+    //     transitionInComplete: ctrl.transitionInComplete,
+    //     transitionOut: ctrl.transitionOut,
+    //     transitionOutComplete: ctrl.transitionOutComplete
+    //   });
+    // });
   });
+  /**
+   * OverlayPanelDirectiveCtrl Specs
+   * 
+   */
   describe("OverlayPanelDirectiveCtrl", function() {
     var ctrl, _panel, _overlay;
     beforeEach(function() {
@@ -485,10 +515,7 @@ describe("layout component", function() {
       expect(ctrl).not.toBeNull();
       expect(ctrl).toBeDefined();
     });
-    it("should create a new isolated layout scope", function() {
-      expect(scope.$new).toHaveBeenCalledWith(true);
-      expect(ctrl.layoutScope).toEqual(_panel);
-    });
+    
     it("should set the required css formatting", function() {
       var el,
           html;
@@ -498,13 +525,11 @@ describe("layout component", function() {
       expect(html).toMatch(/position: absolute/i);
       expect(html).toMatch(/display: block/i);
     });
-    it("should create and configure a transition object", function() {
-      expect(transService).toHaveBeenCalledWith(_panel, element);
-      expect(transition.bind).toHaveBeenCalledWith({x: "css-x", y: "css-y" });
-    });
+    
     it("should retreive the align value from the attribute", function() {
       expect(_panel.align).toEqual("left");
     });
+    
     describe("panel scope resposition", function() {
       beforeEach(function() {
         _panel.width = 100;
@@ -512,57 +537,67 @@ describe("layout component", function() {
         _overlay.width = 200;
         _overlay.height = 200;
       });
+      
       it("should have a method named reposition", function() {
         expect(angular.isFunction(_panel.reposition)).toBeTruthy();
       });
+      
       it("should center the panel", function() {
         _panel.align = "center";
         _panel.reposition();
         expect(_panel.x).toEqual(50);
         expect(_panel.y).toEqual(50);
       });
+      
       it("should align left", function() {
         _panel.align = "left";
         _panel.reposition();
         expect(_panel.x).toEqual(0);
         expect(_panel.y).toEqual(50);
       });
+      
       it("should align right", function() {
         _panel.align = "right";
          _panel.reposition();
          expect(_panel.x).toEqual(100);
          expect(_panel.y).toEqual(50);        
       });
+      
       it("should alignt top", function() {
         _panel.align = "top";
         _panel.reposition();
         expect(_panel.x).toEqual(50);
         expect(_panel.y).toEqual(0);
       });
+      
       it("should align bottom", function() {
         _panel.align = "bottom";
         _panel.reposition();
         expect(_panel.x).toEqual(50);
         expect(_panel.y).toEqual(100);
       });
+      
       it("should align top left", function() {
         _panel.align = "topleft";
         _panel.reposition();
         expect(_panel.x).toEqual(0);
         expect(_panel.y).toEqual(0);
       });
+      
       it("should align top right", function() {
         _panel.align = "topright";
         _panel.reposition();
         expect(_panel.x).toEqual(100);
         expect(_panel.y).toEqual(0);
       });
+      
       it("should align bottom left", function() {
         _panel.align = "bottomleft";
         _panel.reposition();
         expect(_panel.x).toEqual(0);
         expect(_panel.y).toEqual(100);
       });
+      
       it("should align top right", function() {
         _panel.align = "bottomright";
         _panel.reposition();
@@ -572,7 +607,15 @@ describe("layout component", function() {
     });
   });
 });
+/**
+ * Transition Suites Specs
+ * 
+ */
 describe("Transition Suites", function() {
+  /**
+   * Slidey Transition Suite Specs
+   * 
+   */
   describe("SlideyTransitionSuite", function() {
     var suite, registerSpy, MockSuite, trans;
     beforeEach(function() {
@@ -655,6 +698,10 @@ describe("Transition Suites", function() {
     });
   });
 });
+
+//////////////////
+// UTILS 
+//////////////////
 // Custom Matcher Function
 var toHaveBeenCalledWithAndTest = function(){
   var spy = this.actual,

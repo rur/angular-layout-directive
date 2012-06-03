@@ -6,7 +6,7 @@ angular.module('myApp.directives', [])
    * A Layout directive
    * 
    */
-  .directive('aLayout', function() {
+  .directive('aLayout', [ "windowResizeWatcher", function(windowResizeWatcher) {
       return {
         restrict:"EA",
         scope:{},
@@ -17,11 +17,14 @@ angular.module('myApp.directives', [])
         //////////////////
         // LINK
         link:function(scope, iElement, iAttrs, ctrl){
+          scope.name = iAttrs.withName;
           // init
+          // binds a listener to window resize event, which calls $rootScope#$apply() when it changes
+          windowResizeWatcher();
           ctrl.init();
         }
       } 
-    })  
+    }])  
     /**
      * A Block directive
      * 
@@ -45,6 +48,10 @@ angular.module('myApp.directives', [])
               layoutScope = layout.layoutScope;
           // Init
           block.init();
+          // dispose
+          scope.$on("$destroy", function(){
+            block = layoutScope = layout = null;
+          });
         }
       } 
     })
@@ -61,79 +68,78 @@ angular.module('myApp.directives', [])
         //////////////////
         // COMPILE
         compile:function(element, attr){
+          // var template = '<div class="a-screen-content">'+element.html()+"</div>";
           var template = element.html();
           element.html("");
           //////////////
           // LINK
           return function(scope, iElement, iAttrs, controllers){
-            // properties
-            var screen  = controllers[2],
-                block   = controllers[1],
-                layout  = controllers[0],
-                screenScope = scope._screen = screen.layoutScope,
-                blockScope  = scope._block  = block.layoutScope,
-                layoutScope = scope._block  = layout.layoutScope,
-                name = screenScope.name = block.addChild(screenScope, iAttrs.withName),
-                childScope,
-                un$watchers = [];
-            //
-            // Watchers and Listeners
-            // add/remove template 
-            un$watchers.push( screenScope.$watch("displaying()", function(newval, oldval){
-                              if(newval == oldval) return;
-                              toggleContent(newval)
-                            }));
-            // watch the height of the element
-            un$watchers.push( screenScope.$watch( function(){ return $jQuery(iElement).height(); },
-                          function(newval){ 
-                            screenScope.height = newval;
-                          } ));
-            // watch the width of the element
-            un$watchers.push(screenScope.$watch( function(){ return $jQuery(iElement).width(); },
-                          function(newval){ 
-                            screenScope.width = newval;
-                          } ));
-            // listeners
-            scope.$on("transitionedOut", function(){
-              clearContent();
-            });
-            scope.$on("$destroy", function(){
-              angular.forEach(un$watchers, function(un$watch){
-                try{
-                  un$watch();
-                } catch(err){}
-              });
-            })
-            // 
-            // Init
-            // if this is first screen registered, show it
-            screen.init();
-            if(!blockScope.currentScreen) {
-              screenScope.show();
-              toggleContent(true);
-            }
-            // 
-            // private
-            function toggleContent (show) {
-              if(show) {
-                if(childScope){
-                  childScope.$destroy();
-                }
-                childScope = scope.$new();
-                iElement.html(template);
-                $compile(iElement.contents())(childScope);
-                screen.transitionIn();
-              } else {
-                screen.transitionOut();
-              }
-            }
-            function clearContent(){
-              if (childScope) {
-                childScope.$destroy();
-                childScope = null;
-              }
-              iElement.html('');
-            };
+           // properties
+           var screen  = controllers[2],
+               block   = controllers[1],
+               layout  = controllers[0],
+               screenScope = scope._screen = screen.layoutScope,
+               blockScope  = scope._block  = block.layoutScope,
+               layoutScope = scope._layout  = layout.layoutScope,
+               name = screenScope.name = block.addChild(screenScope, iAttrs.withName),
+               childScope;
+           //
+           // Watchers and Listeners
+           // add/remove template 
+           screenScope.$watch("displaying()", function(newval, oldval){
+                             if(newval == oldval) return;
+                             toggleContent(newval)
+                           });
+           // watch the height of the element
+           screenScope.$watch( function(){ return $jQuery(iElement).height(); },
+                         function(newval){ 
+                           screenScope.height = newval;
+                         } );
+           // watch the width of the element
+           screenScope.$watch( function(){ return $jQuery(iElement).width(); },
+                         function(newval){ 
+                           screenScope.width = newval;
+                         } );
+           // listeners
+           scope.$on("transitionedOut", function(){
+             clearContent();
+           });
+           // 
+           // Init
+           // if this is first screen registered, show it
+           screen.init();
+           if(!blockScope.currentScreen) {
+             screenScope.show();
+             toggleContent(true);
+           }
+           // dispose
+           scope.$on("$destroy", function(){
+             screen = block = layout = null;
+             screenScope = blockScope = layoutScope = null;
+             scope._layout = scope._block = scope._screen = null;
+           });
+           // 
+           // private
+           function toggleContent (show) {
+             if(show) {
+               if(childScope){
+                 childScope.$destroy();
+               }
+               childScope = scope.$new();
+               iElement.html(template);
+               $compile(iElement.contents())(childScope);
+               screen.transitionIn();
+             } else {
+               screen.transitionOut();
+             }
+           }
+           function clearContent(){
+             if (childScope) {
+               childScope.$destroy();
+               childScope = null;
+             }
+             iElement.html('');
+           };
           }
         }
       } 
@@ -152,6 +158,7 @@ angular.module('myApp.directives', [])
          //////////////////
          // COMPILE
          compile:function(element, attr){
+           // var template = '<div class="an-overlay-content">'+element.html()+'</div>';
            var template = element.html();
            element.html("");
            //////////////
@@ -160,80 +167,75 @@ angular.module('myApp.directives', [])
             // properties
             var overlay, 
                 overlayScope, 
-                parentScope, 
-                name, 
-                childScope, 
-                masterOverlay,
-                un$watchers = [];
+                parentScope,
+                childScope,
+                parentUn$watchers = [];;
             // 
-            // get parent scope
+            // get parent layout scope
             for (var i=0; i < 3; i++) {
              if(controllers[i]){
                parentScope = (controllers[i]).layoutScope;
              }
             };
             if(!parentScope) $exceptionHandler("No parent scope found!");
-            // init the parent scope to manage overlays
-            if(!parentScope.overlay_init){
-              parentScope.overlays_by_id = {};
-              parentScope.overlay_ids = [];
-              parentScope.overlay = angular.bind( parentScope, function(name){
-               name = name || this.currentOverlay || this.overlay_ids[0];
-               return this.overlays_by_id[name];
-              });
-              parentScope.overlay_init = true;
-            }
-            // 
             // wire up properties
             scope._parent = parentScope;
             overlay = controllers[3];
             overlayScope = scope._overlay = overlay.layoutScope;
-            name = overlayScope.name = overlay.getUniqueID( iAttrs.withName, parentScope.overlay_ids, "overlay_");
-            parentScope.overlay_ids.push(name);
-            parentScope.overlays_by_id[name] = overlayScope; 
              //
              // Watchers and Listeners
              // add/remove template 
-             un$watchers.push(overlayScope.$watch( "displaying()", 
+             overlayScope.$watch( "displaying()", 
                           function(newval, oldval){
                              if(newval == oldval) return;
                              toggleContent(newval)
-                           }));
-             // watch the height of the element
-             un$watchers.push(parentScope.$watch( "height",
-                           function(newval){ 
-                             overlayScope.height = newval;
-                           } ));
-             // watch the width of the element
-             un$watchers.push(parentScope.$watch( "width",
-                           function(newval){ 
-                             overlayScope.width = newval;
-                           }));
-             // listen for transitionedOut event to dispose the overlay contents
-             un$watchers.push(parentScope.$watch("trasnState", function(){
-                overlayScope.height = parentScope.height;
-                overlayScope.width = parentScope.width;
-              }));
+                           });  
              // listen for transitionedOut event to dispose the overlay contents
              scope.$on("transitionedOut", clearContent);
              scope.$on("$destroy", function(){
-               var ids =  parentScope.overlay_ids;
                clearContent(); 
-               delete parentScope.overlays_by_id[name];
-               ids.splice(ids.indexOf(name), 1);
+               parentScope.overlay_register.clear();
                parentScope.currentOverlay = null;
-               angular.forEach(un$watchers, function(un$watch){
-                try{
-                  un$watch();
-                }catch(err){}
-               });
+               overlayScope.$destroy();
+               overlay = overlayScope = parentScope = null;
              });
              // 
              // Init
              overlay.init();
+             watchParent();
              // 
              // 
              // private
+             function watchParent () {
+               unWatchParent();
+              // watch the height of the element
+              parentUn$watchers.push(parentScope.$watch( "height",
+                            function(newval){ 
+                              overlayScope.height = newval;
+                            } ));
+              // watch the width of the element
+              parentUn$watchers.push(parentScope.$watch( "width",
+                            function(newval){ 
+                              overlayScope.width = newval;
+                            }));
+              parentUn$watchers.push(parentScope.$watch("transState",function(newval){
+               switch(newval){
+                 case "transitionedIn":
+                   overlayScope.height = parentScope.height;
+                   overlayScope.width = parentScope.width;
+                   break;
+                 case "transitioningOut":
+                   unWatchParent();
+                   break;
+               }
+              }));
+             }
+             function unWatchParent () {
+               angular.forEach(parentUn$watchers, function(un$watch){
+                 un$watch();
+               });
+               parentUn$watchers = [];
+             }
              function toggleContent (show) {
                if(show) {
                  if(childScope){
@@ -258,79 +260,69 @@ angular.module('myApp.directives', [])
          }
        } 
      }])
-     .directive('anOverlayPanel', ["$jQuery","$window", "$timeout", function($jQuery, $window, $timeout){
+     .directive('anOverlayPanel', ["$jQuery", function($jQuery){
       return{
         restrict: "EA",
+        transclude: true,
+        template: "<div><div class='an-overlay-panel-content' ng-transclude></div></div>",
+        replace: true,
         controller: OverlayPanelDirectiveCtrl,
         //////////////
         // LINK
         link: function(scope, elm, attrs, ctrl) {
           var panel = scope._panel,
-              responsiveness = !isNaN(attrs.responsiveness) ? Number(attrs.responsiveness) : 50,
-              resizeCount = 0,
-              un$watchers = [];
+              overlayUn$watchers = [];
           // watchers
-          un$watchers.push(scope._overlay.$watch("width+'~'+height", function(){
-            if(scope._overlay.transState == "transitionedIn") panel.reposition();
-          }));
-          un$watchers.push(panel.$watch("width+'~'+height+'~'+align", function(){
-            panel.reposition();
-          }));
-          un$watchers.push(scope.$watch(function(){ return $jQuery(elm).height(); },
+          panel.$watch("width+'~'+height+'~'+align", function(){
+            if(panel.transState == "transitionedIn") panel.reposition();
+          });
+          scope.$watch(function(){ return $jQuery(elm).children(".an-overlay-panel-content").height(); },
             function(newval){
-              if(panel.transState == "transitionedIn") panel.height = newval;
+              panel.height = newval;
             }
-          ));
-          un$watchers.push(scope.$watch(function(){ return $jQuery(elm).width(); },
+          );
+          scope.$watch(function(){ return $jQuery(elm).children(".an-overlay-panel-content").width(); },
             function(newval){
-              if(panel.transState == "transitionedIn") panel.width = newval;
+              panel.width = newval;
             }
-          ));
-          un$watchers.push(scope._overlay.$watch("transState",function(newval){
-            switch(newval){
-              case "transitionedIn":
-                panel.width = $jQuery(elm).width();
-                panel.height = $jQuery(elm).height();
-                panel.reposition();
-                elm.css("top", panel.y);
-                elm.css("left", panel.x);
-                break;
-            }
-          }));
-          // listeners
-          scope.$on("transitioningOut", function(){
-            toggleDisplay(false);
-          })
-          scope.$on("$dispose", function(){
-            toggleDisplay(false);
-            angular.forEach(un$watchers, function(un$watch){
-              try{
-                un$watch();
-              } catch(err){}
-            });
+          );
+          // 
+          scope.$on("$destroy", function(){
+            panel.$destroy()
+            panel = null;
+            ctrl.layoutScope.$destroy();
           })
           // init
           ctrl.init();
           // show it
-          toggleDisplay(true);
-          // 
+          ctrl.transitionIn();
+          watchParent();
           // private
-          function toggleDisplay (show) {
-            if(show){
-              $jQuery($window).bind("resize", updateSize);
-              ctrl.transitionIn();
-            } else {
-              $jQuery($window).unbind("resize", updateSize);
-              ctrl.transitionOut();
-            }
-          }
-          function updateSize () {
-            $timeout((function(c){
-              return function(){
-                if(c < resizeCount) return;
-                scope._parent.$apply();
+          function watchParent () {
+            unWatchParent();
+            overlayUn$watchers.push(scope._overlay.$watch("width+'~'+height", function(){
+              if(scope._overlay.transState == "transitionedIn") panel.reposition();
+            }));
+            overlayUn$watchers.push(scope._overlay.$watch("transState",function(newval){
+              switch(newval){
+                case "transitionedIn":
+                  panel.width = $jQuery(elm).children(".an-overlay-panel-content").width();
+                  panel.height = $jQuery(elm).children(".an-overlay-panel-content").height();
+                  panel.reposition();
+                  elm.css("top", panel.y);
+                  elm.css("left", panel.x);
+                  break;
+                case "transitioningOut":
+                  unWatchParent();
+                  break;
               }
-            })(++resizeCount), responsiveness, false);
+            }));
+          }
+          function unWatchParent () {
+            angular.forEach(overlayUn$watchers, function(un$watch, key){
+              un$watch();
+            });
+            overlayUn$watchers = [];
           }
         }
       }

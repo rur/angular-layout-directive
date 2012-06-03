@@ -187,7 +187,7 @@
     this.addReflowWatcher = function(expression){
       if(!angular.isString(expression)) $exceptionHandler("You can only add a string expression as a reflow watcher");
       if(reflow$watchers.hasOwnProperty(expression)) return;
-      reflow$watchers[expression] = layoutScope.$watch(expression, self.reflow);
+      reflow$watchers[expression] = layoutScope.$watch(expression, function(){ self.reflow() });
     }
   
     /**
@@ -274,7 +274,7 @@
       }
     });   
     trans.bind({ hidden: "css-hidden"});
-                  
+    
     /**
      * compute the height of this display
      */
@@ -362,11 +362,38 @@
     return C; 
   }
   
+  function Registry (name) {
+    this.name = name;
+    this.ids = []; 
+    this.by_id = {};
+  }
+  
+  Registry.prototype = {
+    clear: function(){
+      this.ids = [];
+      this.by_id = {};
+    },
+    contains: function(name){
+      return this.by_id.hasOwnProperty(name);
+    },
+    add: function(name, value){
+      this.ids.push(name);
+      this.by_id[name] = value;
+    },
+    get: function(name){
+      return this.by_id[name];
+    }, 
+    first: function(){
+      return this.by_id[this.ids[0]];
+    }, 
+  }
+  
   window.LayoutContainerBase = LayoutContainerBase;
   window.LayoutBlockBase = LayoutBlockBase;
   window.LayoutContainerBlockBase = extendLayoutController(LayoutContainerBase, LayoutBlockBase);
   window.LayoutDisplayBase = LayoutDisplayBase;
   window.layout_component_utils = {
     extendController: extendLayoutController,
+    new_registry: function(name){ return new Registry(name);} 
   }
 })(window);
