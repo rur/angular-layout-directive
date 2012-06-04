@@ -1,3 +1,5 @@
+#Under construction - Do not use#
+
 #Layout Component#
 The Layout Component is a set of [Angular JS](http://angularjs.org) directives designed to makes it easier to control complex interactive UI in web applications. It effectively moves some of the container positioning, sizing and display responsibilities away from the browser and implements a JavaScript layer which is more customizable. 
 

@@ -41,11 +41,14 @@
             <div ng-click="_overlay.hide()" class="back"></div>
          </div>
       </div>
-       <div an-overlay with-name="overlayA" class="my-overlay">
+       <div an-overlay with-name="someBlockOverlay" class="my-overlay">
          <div an-overlay-panel class="my-panel">
             <p>Hello Overlay</p>
             <p>{{rootValue}}</p>
-            <p><input type="button" ng-click="_overlay.show('overlayB')" value="Show overlay B"></p>
+            <ng-switch on="_parent.currentScreen">
+               <p ng-switch-when="screen"><input type="button" ng-click="_parent.currentScreen = 'screen-2'" value="Show Screen 2"></p>
+               <p ng-switch-when="screen-2"><input type="button" ng-click="_parent.currentScreen = 'screen'" value="Show Screen 1"></p>
+            </ng-switch>
             <p><input type="button" ng-click="_overlay.hide()" value="Hide Overlay"></p>
          </div>
          <div ng-click="_overlay.hide()" class="back"></div>

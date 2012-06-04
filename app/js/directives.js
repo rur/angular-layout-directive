@@ -68,8 +68,8 @@ angular.module('myApp.directives', [])
         //////////////////
         // COMPILE
         compile:function(element, attr){
-          // var template = '<div class="a-screen-content">'+element.html()+"</div>";
-          var template = element.html();
+          var template = '<div class="a-screen-content" style="display: inline-block; width: 100%;">'+element.html()+"</div>";
+          // var template = element.html();
           element.html("");
           //////////////
           // LINK
@@ -91,12 +91,12 @@ angular.module('myApp.directives', [])
                              toggleContent(newval)
                            });
            // watch the height of the element
-           screenScope.$watch( function(){ return $jQuery(iElement).height(); },
+           screenScope.$watch( function(){ return $jQuery(iElement).children(".a-screen-content").height(); },
                          function(newval){ 
                            screenScope.height = newval;
                          } );
            // watch the width of the element
-           screenScope.$watch( function(){ return $jQuery(iElement).width(); },
+           screenScope.$watch( function(){ return $jQuery(iElement).children(".a-screen-content").width(); },
                          function(newval){ 
                            screenScope.width = newval;
                          } );
@@ -158,8 +158,8 @@ angular.module('myApp.directives', [])
          //////////////////
          // COMPILE
          compile:function(element, attr){
-           // var template = '<div class="an-overlay-content">'+element.html()+'</div>';
            var template = element.html();
+           // var template = element.html();
            element.html("");
            //////////////
            // LINK
@@ -264,7 +264,7 @@ angular.module('myApp.directives', [])
       return{
         restrict: "EA",
         transclude: true,
-        template: "<div><div class='an-overlay-panel-content' ng-transclude></div></div>",
+        template: "<div class='an-overlay-panel'><div class='an-overlay-panel-content' style='display: inline-block; width: 100%;' ng-transclude></div></div>",
         replace: true,
         controller: OverlayPanelDirectiveCtrl,
         //////////////
