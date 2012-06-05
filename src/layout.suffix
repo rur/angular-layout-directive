@@ -1,0 +1,7 @@
+
+
+
+declareLayoutModule();
+
+})(window, window.angular);
+

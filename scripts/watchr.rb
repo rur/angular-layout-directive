@@ -16,7 +16,7 @@ def run(cmd)
   `#{cmd}`
 end
 
-watch( '(app/js|test/unit)' )  do
+watch( '(src/.+\.js|test/unit/.+\.js)' )  do
   # `echo "\n\ntest run started @ \`date\`" > #{log_file}`
   # `script.angularjs/test.sh &> #{log_file}`
   
