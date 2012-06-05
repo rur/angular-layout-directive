@@ -12,10 +12,10 @@ function declareLayoutModule(){
       //   beSlidey: beSlideyDirective
       // });
       $provide.provider({
-        // $jQuery: $JQueryProvider,
-        // windowResizeWatcher: WindowResizeWatcherProvider,
-        augmentController: AugmentControllerProvider
-        // transition: TransitionProvider
+        $jQuery: JQueryProvider,
+        windowResizeWatcher: WindowResizeWatcherProvider,
+        augmentController: AugmentControllerProvider,
+        transition: TransitionProvider
       });
     }]);
 }
