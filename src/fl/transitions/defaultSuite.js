@@ -20,32 +20,34 @@
  * @constructor
  */
 function DefaultTransitionSuite () {
-  var props = {},
+  var self = this,
       display,
       defaultDisplay;
+  
+  this.props = {};
   
   this.register("css-x", function (newval, oldval) {
     if( !isValidNumString(newval) ) return false;
     newval = isValidNum(newval) ? newval.toString() + "px" : newval;
-    props["left"] = newval;
+    self.props["left"] = newval;
   })
   
   this.register("css-y", function (newval, oldval) {
     if( !isValidNumString(newval) ) return false;
     newval = isValidNum(newval) ? newval.toString() + "px" : newval;
-    props["top"] = newval;
+    self.props["top"] = newval;
   })
   
   this.register("css-width", function (newval, oldval) {
     if( !isValidNumString(newval) ) return false;
     newval = isValidNum(newval) ? newval.toString() + "px" : newval;
-    props["width"] = newval;
+    self.props["width"] = newval;
   })
         
   this.register("css-height", function (newval, oldval) {
     if( !isValidNumString(newval) ) return false;
     newval = isValidNum(newval) ? newval.toString() + "px" : newval;
-    props["height"] = newval;
+    self.props["height"] = newval;
   })
   
   this.register("css-hidden", function (newval, oldval) {
@@ -55,10 +57,10 @@ function DefaultTransitionSuite () {
   this.register("css-opacity", function (newval, oldval) {
     var ieVal;
     if(!isValidNum(newval)) return false;
-    props["opacity"] = newval;
-    props["-moz-opacity"] = newval;
+    self.props["opacity"] = newval;
+    self.props["-moz-opacity"] = newval;
     ieVal = Math.round(newval*100);
-    props["filter"] = "alpha(opacity="+ieVal+")";
+    self.props["filter"] = "alpha(opacity="+ieVal+")";
   });
   
   this.fire = function(element, config){
@@ -66,15 +68,15 @@ function DefaultTransitionSuite () {
     if(!defaultDisplay && element.css("display") != "none") defaultDisplay = element.css("display");
     switch(display){
       case "show":
-        props["display"] = defaultDisplay ? defaultDisplay : "block";
+        self.props["display"] = defaultDisplay ? defaultDisplay : "block";
         break;
       case "hide":
-        props["display"] = "none";
+        self.props["display"] = "none";
         break;
     }
-    element.css(props);
+    element.css(self.props);
     display = null;
-    props = {};
+    self.props = {};
     onComplete();
   }
 }
