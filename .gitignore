@@ -5,4 +5,7 @@ build.xml
 
 .project
 .settings
-.idea/*
+
+idea/
+jstd.log
+build/
