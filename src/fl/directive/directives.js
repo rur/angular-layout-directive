@@ -372,7 +372,7 @@ function extendLayoutCtrl (base, child){
    // ask for everything.   
    C.$inject = [].concat(base.$inject).concat(child.$inject);
    // makes this process recursive
-   if(args.length > 2) C = extendLayoutController.apply(null, [C].concat(args.slice(2)))
+   if(args.length > 2) C = extendLayoutCtrl.apply(null, [C].concat(args.slice(2)))
    return C; 
 }
 

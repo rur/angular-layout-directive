@@ -25,8 +25,6 @@ function TransitionProvider () {
     defaultSuites.push(constructor);
   }
   
-  this.addSuiteClass(DefaultTransitionSuite);
-  
   this.$get = [ "$exceptionHandler", function transitionFactory ($exceptionHandler) {
     /**
      * TransitionService 

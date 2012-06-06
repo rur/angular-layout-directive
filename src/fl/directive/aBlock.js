@@ -77,7 +77,7 @@ function BlockDirectiveCtrl ($scope, $element, $attrs, transition, augmentContro
   });
 }
 BlockDirectiveCtrl.$inject = ["$scope", "$element", "$attrs", "transition", "augmentController"];
-
+BlockDirectiveCtrl = extendLayoutCtrl(LayoutContainerBase, LayoutBlockBase, BlockDirectiveCtrl);
 
 /**
  * aBlock Directive
@@ -93,7 +93,7 @@ var aBlockDirective =  function() {
      transclude:true,
      template:'<div class="a-block" ng-transclude></div>',
      replace:true,
-     controller: extendController(LayoutContainerBase, LayoutBlockBase, BlockDirectiveCtrl),
+     controller: BlockDirectiveCtrl,
      //////////////////
      // LINK
      link:function(scope, iElement, iAttrs, controllers){

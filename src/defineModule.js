@@ -1,22 +1,24 @@
 'use strict';
 
 function declareLayoutModule(){
-  angular.module('flLayout', [], ['$provide', 
-    function flLayoutModule($provide) {
-      // $provide.directive({
-      //   aLayout: aLayoutDirective,
-      //   aBlock: aBlockDirective,
-      //   aScreen: aScreenDirective,
-      //   anOverlay: anOverlayDirective,
-      //   anOverlayPanel: anOverlayPanelDirective,
-      //   beSlidey: beSlideyDirective
-      // });
+  angular.module('flLayout', [], ['$provide', '$compileProvider',
+    function flLayoutModule($provide, $compileProvider) {
+      $compileProvider.directive({
+              aLayout: aLayoutDirective,
+              aBlock: aBlockDirective,
+            //   aScreen: aScreenDirective,
+            //   anOverlay: anOverlayDirective,
+            //   anOverlayPanel: anOverlayPanelDirective,
+            //   beSlidey: beSlideyDirective
+            });
       $provide.provider({
         $jQuery: JQueryProvider,
         windowResizeWatcher: WindowResizeWatcherProvider,
-        augmentController: AugmentControllerProvider,
-        transition: TransitionProvider
+        augmentController: AugmentControllerProvider
       });
+      $provide.provider("transition", TransitionProvider)
+          .addSuiteClass(DefaultTransitionSuite);
     }]);
 }
+
 
