@@ -9,6 +9,7 @@ describe("LayoutDirectiveCtrl", function() {
       transition,
       augmentCtrl,
       injector; 
+      
    beforeEach(function(){
      inject(function($rootScope, $injector) {
        scope = $rootScope.$new();
@@ -109,6 +110,7 @@ describe("LayoutDirectiveCtrl", function() {
       })
       expect(scope.abc).toEqual(123);
     });
+    
    it("should only trigger a reflow once despite multiple calls", function() {
      var flowSpy = jasmine.createSpy("Reflow Spy");
      ctrl.layout(flowSpy);
@@ -119,7 +121,24 @@ describe("LayoutDirectiveCtrl", function() {
      scope.$digest();
      expect(flowSpy.callCount).toEqual(1);
    });
+   
    it("should have a super object with instance methods", function() {
      expect(ctrl._super.defaultLayout).toEqual(ctrl.defaultLayout);
    });
+});
+
+describe('aLayoutDirective', function() {
+  
+ beforeEach(module('flLayout'));
+ 
+ it('should transclude contents', function() {
+   inject(function($compile, $rootScope) {
+     var element = $compile('<a-layout>{{message}}</a-layout>')($rootScope),
+         element2 = $compile('<div a-layout>{{message}}</div>')($rootScope);
+     $rootScope.message = "Hello World";
+     $rootScope.$digest();
+     expect(element.text()).toEqual('Hello World');
+     expect(element2.text()).toEqual('Hello World');
+   });
+ });
 });

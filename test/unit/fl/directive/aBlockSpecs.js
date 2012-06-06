@@ -14,19 +14,18 @@
         injector,
         ctrl, 
         reflowSpy;
+        
     beforeEach(function(){
       inject(function($rootScope, $injector) {
         scope = $rootScope.$new();
         injector = $injector;
-        transition = jasmine.createSpyObj("Transition Spy", ["state", "bind", "addSuite"]);
-        transition.state.config = jasmine.createSpy("Transition State Config Spy");
-        transService = jasmine.createSpy("Tansition Service Spy").andReturn(transition);
-        attrs = {withController: "SomeController"};
-        augmentCtrl = jasmine.createSpy("Augment Controller Service Spy");
-        // document.createElement needed for IE7, for some reason
-        element = angular.element(document.createElement("div"));
       });
-      // 
+      transition = jasmine.createSpyObj("Transition Spy", ["state", "bind", "addSuite"]);
+      transition.state.config = jasmine.createSpy("Transition State Config Spy");
+      transService = jasmine.createSpy("Tansition Service Spy").andReturn(transition);
+      attrs = {withController: "SomeController"};
+      augmentCtrl = jasmine.createSpy("Augment Controller Service Spy");
+      element = angular.element(document.createElement("div"));
       var locals = {
         $scope: scope,
         $element: element,
@@ -143,13 +142,32 @@
     it("should initialize setting the init transition state and the height reflow watcher", function() {
       expect(transition.state).toHaveBeenCalledWith("init");
     });
+    
     it("should add a calculate width and height function to the scope", function() {
       scope.width = 150;
       scope.height = 200;
       expect(scope.calculateHeight()).toEqual(200);
       expect(scope.calculateWidth()).toEqual(150);
     });
+    
     it("should have a super object with a backup reference to its methods", function() {
       expect(ctrl._super.defaultLayout).toEqual(ctrl.defaultLayout);
     });
   });
+  
+  describe('aBlockDirective', function() {
+    
+    beforeEach(module('flLayout'));
+    
+    it('should transclude contents', function() {
+      inject(function($compile, $rootScope) {
+        var element = $compile('<a-layout><a-block>{{message}}</a-block></a-layout>')($rootScope),
+            element2 = $compile('<div a-layout><div a-block>{{message}}</div></div>')($rootScope);
+        $rootScope.message = "Hello World";
+        $rootScope.$digest();
+        expect(element.text()).toEqual('Hello World');
+        expect(element2.text()).toEqual('Hello World');
+      });
+    });
+  });
+  

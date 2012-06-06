@@ -65,6 +65,7 @@ function ScreenDirectiveCtrl($scope, $element, $attrs, augmentController){
   });
 }
 ScreenDirectiveCtrl.$inject = ["$scope", "$element", "$attrs", "augmentController"]
+ScreenDirectiveCtrl = extendLayoutCtrl(LayoutBlockBase, LayoutDisplayBase, ScreenDirectiveCtrl);
 
 /**
  * aScreen Directive
@@ -76,7 +77,7 @@ ScreenDirectiveCtrl.$inject = ["$scope", "$element", "$attrs", "augmentControlle
      restrict:"EA",
      scope:true,
      require:["^aLayout", "^aBlock", "aScreen"],
-     controller: extendLayoutCtrl(LayoutBlockBase, LayoutDisplayBase, ScreenDirectiveCtrl),
+     controller: ScreenDirectiveCtrl,
      //////////////////
      // COMPILE
      compile:function(element, attr){

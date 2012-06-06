@@ -6,7 +6,7 @@ function declareLayoutModule(){
       $compileProvider.directive({
               aLayout: aLayoutDirective,
               aBlock: aBlockDirective,
-            //   aScreen: aScreenDirective,
+              aScreen: aScreenDirective,
             //   anOverlay: anOverlayDirective,
             //   anOverlayPanel: anOverlayPanelDirective,
             //   beSlidey: beSlideyDirective
