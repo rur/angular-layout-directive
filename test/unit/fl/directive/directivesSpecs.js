@@ -177,8 +177,6 @@ describe("directives", function() {
       expect(ctrl._super.defaultLayout).toEqual(ctrl.defaultLayout);
       expect(ctrl._super.setLayoutScope).toEqual(ctrl.setLayoutScope);
       expect(ctrl._super.reflow).toEqual(ctrl.reflow);
-      expect(ctrl._super.getUniqueID).toEqual(ctrl.getUniqueID);
-      expect(ctrl._super.validateAndTrim).toEqual(ctrl.validateAndTrim);
       expect(ctrl._super.init).toEqual(ctrl.init);
     });
 
@@ -194,36 +192,8 @@ describe("directives", function() {
       ctrl.setLayoutScope(newScope);
       expect(ctrl.layoutScope).toEqual(newScope);
     });
-    
-    describe("validateAndTrim", function() {
-      it("should pass some and fail others", function() {
-        expect(ctrl.validateAndTrim("abc")).toEqual("abc");
-        expect(ctrl.validateAndTrim(" abc ")).toEqual("abc");
-        expect(ctrl.validateAndTrim("a")).toEqual("a");
-        expect(ctrl.validateAndTrim("")).toBeFalsy();
-        expect(ctrl.validateAndTrim()).toBeFalsy();
-        expect(ctrl.validateAndTrim(123)).toBeFalsy();
-        expect(ctrl.validateAndTrim([])).toBeFalsy();
-        expect(ctrl.validateAndTrim({})).toBeFalsy();
-        expect(ctrl.validateAndTrim(function(){})).toBeFalsy();
-      });
-    });
-    describe("getUniqueID", function() {
-      var arr;
-      beforeEach(function() {
-        arr = ["a","b","c"];
-      });
-      it("should pass a valid id back", function() {
-        expect(ctrl.getUniqueID("test", arr)).toEqual("test");
-      });
-      it("should create a new uniqe id based upon prepend attribute", function() {
-        expect(ctrl.getUniqueID(null, arr, "some_")).toEqual("some_1");
-      });
-      it("should increment a collision", function() {
-        expect(ctrl.getUniqueID("a", arr, "some_")).toEqual("a1");
-      });
-    });
   });
+  
   describe("LayoutBlockBase", function() {
     var ctrl,
         scope,

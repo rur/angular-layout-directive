@@ -9,6 +9,7 @@
 function OverlayPanelDirectiveCtrl ($scope, $element, $attrs) {
   var self = this,
       panel = $scope._panel = this.layoutScope,
+      name = panel.name = $attrs.withName,
       trans = this.transition;
   $element.css("position", "absolute");
   $element.css("display", "block");
@@ -69,7 +70,7 @@ function OverlayPanelDirectiveCtrl ($scope, $element, $attrs) {
   }
 }
 OverlayPanelDirectiveCtrl.$inject = ["$scope", "$element", "$attrs"];
-
+OverlayPanelDirectiveCtrl = extendLayoutCtrl(LayoutBlockBase, LayoutDisplayBase, OverlayPanelDirectiveCtrl);
 
 /**
  * anOverlayPanel Directive 
@@ -82,7 +83,7 @@ var anOverlayPanelDirective = ["$jQuery", function($jQuery){
      transclude: true,
      template: "<div class='an-overlay-panel'><div class='an-overlay-panel-content' style='display: inline-block; width: 100%;' ng-transclude></div></div>",
      replace: true,
-     controller: extendLayoutCtrl(LayoutBlockBase, LayoutDisplayBase, OverlayPanelDirectiveCtrl),
+     controller: OverlayPanelDirectiveCtrl,
      //////////////
      // LINK
      link: function(scope, elm, attrs, ctrl) {

@@ -63,7 +63,7 @@
        }
      }
      // register this overlay
-     overlay.name = self.getUniqueID( $attrs.withName, parentScope.overlay_register.ids, "overlay_");
+     overlay.name = getUniqueID( $attrs.withName, parentScope.overlay_register.ids, "overlay_");
      parentScope.overlay_register.add(overlay.name, overlay);
      // 
      // augment controller

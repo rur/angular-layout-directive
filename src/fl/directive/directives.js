@@ -29,12 +29,12 @@
    this.addChild = function (child, name){
      // if a valid name is supplied it will throw an error for a duplicate, 
      // otherwise it silently creates a new unique id
-     if((name = self.validateAndTrim(name))){
+     if((name = validateAndTrim(name))){
        if( childrenByName.hasOwnProperty(name)) {
          $exceptionHandler("Sorry but this Layout Container already has a child with the name '"+name+"'");
        }
      } else {
-       name = self.getUniqueID("child_"+(ids.length+1), ids);
+       name = getUniqueID("child_"+(ids.length+1), ids);
      }
      ids.push(name);
      child.$on("reflow", onChildReflow);
@@ -99,43 +99,7 @@
      self.layout();
    }
    
-   /**
-    * Utility function for obtaining a unique id from a specified array of ids
-    * 
-    * @param {string} name The perferred name, it will be incremented if it is a dup
-    * @param {array} collection The array of keys it needs to be unique within
-    * @param {string optional} prepend The string to use to prepend a generated id
-    * @return {string} an id which is unique within the collection received
-    */
-   this.getUniqueID = function(name, collection, prepend){
-     var step = 1, 
-         base = name;
-     if(!angular.isString(name = self.validateAndTrim(name))){
-       base = prepend;
-       name = base+(step++);
-     }
-     while(collection.indexOf(name) > -1){
-       name = base+(step++);
-     }
-     return name;
-   }
    
-   /**
-    * Makes sure a value is valid as an key for a hash
-    * 
-    * It must be a string, and when trimmed, it must be longer than 0
-    * 
-    * @param {string} id The string to make sure if valid
-    * @return {string|boolean} If it is valid it will return a trimmed valid id, if validation failes it will return false
-    */
-   this.validateAndTrim = function (id) {
-     if( !angular.isString(id) ) return false;
-     id = id.replace(/^\s+|\s+$/g,"");
-     if( id.length == 0 ) return false;
-     return id;
-   }
-   
- 
    /** 
     * Init function called at some point after instanciation, before use
     */
@@ -160,9 +124,7 @@
       layout: self.layout,
       reflow: self.reflow,
       defaultLayout: self.defaultLayout,
-      setLayoutScope: self.setLayoutScope, 
-      getUniqueID: self.getUniqueID,
-      validateAndTrim: self.validateAndTrim
+      setLayoutScope: self.setLayoutScope
     });
    
    // private

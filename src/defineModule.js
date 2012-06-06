@@ -8,7 +8,7 @@ function declareLayoutModule(){
               aBlock: aBlockDirective,
               aScreen: aScreenDirective,
               anOverlay: anOverlayDirective,
-            //   anOverlayPanel: anOverlayPanelDirective,
+              anOverlayPanel: anOverlayPanelDirective,
             //   beSlidey: beSlideyDirective
             });
       $provide.provider({

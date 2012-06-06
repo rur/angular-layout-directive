@@ -17,6 +17,34 @@ describe("LayoutSpec", function() {
       expect(arr.indexOf("10")).toEqual(-1);
     });
   });
+ describe("validateAndTrim", function() {
+    it("should pass some and fail others", function() {
+      expect(validateAndTrim("abc")).toEqual("abc");
+      expect(validateAndTrim(" abc ")).toEqual("abc");
+      expect(validateAndTrim("a")).toEqual("a");
+      expect(validateAndTrim("")).toBeFalsy();
+      expect(validateAndTrim()).toBeFalsy();
+      expect(validateAndTrim(123)).toBeFalsy();
+      expect(validateAndTrim([])).toBeFalsy();
+      expect(validateAndTrim({})).toBeFalsy();
+      expect(validateAndTrim(function(){})).toBeFalsy();
+    });
+  });
+  describe("getUniqueID", function() {
+    var arr;
+    beforeEach(function() {
+      arr = ["a","b","c"];
+    });
+    it("should pass a valid id back", function() {
+      expect(getUniqueID("test", arr)).toEqual("test");
+    });
+    it("should create a new uniqe id based upon prepend attribute", function() {
+      expect(getUniqueID(null, arr, "some_")).toEqual("some_1");
+    });
+    it("should increment a collision", function() {
+      expect(getUniqueID("a", arr, "some_")).toEqual("a1");
+    });
+  });
   describe("Registry class", function() {
     var reg;
     beforeEach(function() {

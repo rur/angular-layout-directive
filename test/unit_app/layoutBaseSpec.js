@@ -215,7 +215,6 @@ describe("Layout Base Controllers", function() {
       expect(ctrl._super.setLayoutScope).toEqual(ctrl.setLayoutScope);
       expect(ctrl._super.reflow).toEqual(ctrl.reflow);
       expect(ctrl._super.getUniqueID).toEqual(ctrl.getUniqueID);
-      expect(ctrl._super.validateAndTrim).toEqual(ctrl.validateAndTrim);
       expect(ctrl._super.init).toEqual(ctrl.init);
     });
 
