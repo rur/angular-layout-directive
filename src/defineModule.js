@@ -9,7 +9,7 @@ function declareLayoutModule(){
               aScreen: aScreenDirective,
               anOverlay: anOverlayDirective,
               anOverlayPanel: anOverlayPanelDirective,
-            //   beSlidey: beSlideyDirective
+              beSlidey: beSlideyDirective
             });
       $provide.provider({
         $jQuery: JQueryProvider,

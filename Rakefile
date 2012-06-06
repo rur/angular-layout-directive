@@ -8,6 +8,7 @@ files = eval(content.gsub(/\};(\s|\S)*/, '}').
             gsub(/\/\//, '#'));
 
 BUILD_DIR = 'build'
+DEMO_DIR = 'app'
 
 task :default => [:compile, :test]
 
@@ -27,14 +28,13 @@ end
 desc 'Compile JavaScript'
 task :compile => [:init] do
 
-  concat_file('flLayout.js', [
+  concat_file('fl_layout.js', [
         'src/layout.prefix',
         files['layoutSrc'],
         'src/layout.suffix',
-      ], gen_css('css/layout.css', true))
+      ], gen_css('css/layout.css', true));
       
-  closure_compile('flLayout.js')
-
+  closure_compile('fl_layout.js');
 end
 
 
