@@ -110,7 +110,7 @@
     });
  });
  
- describe('aScreen', function() {
+ describe('aScreenDirective', function() {
    
    beforeEach(module('flLayout'));
    

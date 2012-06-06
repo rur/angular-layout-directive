@@ -82,8 +82,8 @@
    });
  }
 
- OverlayDirectiveCtrl.$inject = ["$scope", "$attrs", "$element", 'augmentController', "$exceptionHandler"];
-
+OverlayDirectiveCtrl.$inject = ["$scope", "$attrs", "$element", 'augmentController', "$exceptionHandler"];
+OverlayDirectiveCtrl = extendLayoutCtrl(LayoutContainerBase, LayoutDisplayBase, OverlayDirectiveCtrl);
 
 /**
  * anOverlay Directive
@@ -95,7 +95,7 @@
       restrict:"EA",
       scope:true,
       require:["^?aLayout", "^?aBlock","^?aScreen", "anOverlay"],
-      controller: extendLayoutCtrl(LayoutContainerBase, LayoutDisplayBase, OverlayDirectiveCtrl),
+      controller: OverlayDirectiveCtrl,
       //////////////////
       // COMPILE
       compile:function(element, attr){
