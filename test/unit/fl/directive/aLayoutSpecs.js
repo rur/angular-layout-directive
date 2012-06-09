@@ -64,7 +64,8 @@ describe("LayoutDirectiveCtrl", function() {
                                               { $scope: scope, 
                                                 $element: element, 
                                                 $attrs: attrs, 
-                                                $trans: transition });
+                                                _trans: transition,
+                                                _layout: scope });
   });
     
     it("should add a child scope", function() {

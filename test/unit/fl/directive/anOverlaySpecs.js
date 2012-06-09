@@ -40,7 +40,7 @@ describe("OverlayDirectiveCtrl", function() {
     }
     spyOn(scope, "$new").andReturn(_overlay);
     ctrl = injector.instantiate(OverlayDirectiveCtrl, locals);
-    ctrl.init();
+    ctrl.init(_parent);
     // // Custom matchers
     this.addMatchers({
         toHaveBeenCalledWithAndTest: toHaveBeenCalledWithAndTest
@@ -81,13 +81,13 @@ describe("OverlayDirectiveCtrl", function() {
     expect(reg.by_id).toEqual({});
     expect(reg.contains("test")).toBeFalsy();
     _parent.overlay_register.value = "not_clobbered";
-    ctrl.init();
+    ctrl.init({});
     expect(_parent.overlay_register.value).toEqual("not_clobbered");
   });
   
   it("should register it", function() {
     spyOn(_parent.overlay_register, "add");
-    ctrl.init();
+    ctrl.init(_parent);
     expect(_parent.overlay_register.add).toHaveBeenCalledWith(_overlay.name, _overlay);
   });
   
@@ -130,7 +130,9 @@ describe("OverlayDirectiveCtrl", function() {
                                               { $scope: scope, 
                                                 $element: element, 
                                                 $attrs: attrs, 
-                                                $trans: transition });
+                                                _trans: transition,
+                                                _overlay: _overlay,
+                                                _parent: _parent });
   });
 });
 

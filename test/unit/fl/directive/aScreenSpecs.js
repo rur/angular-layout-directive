@@ -17,8 +17,8 @@
         _block, 
         name;
    beforeEach(function() {
-     inject(function($rootScope, $injector) {
-       scope = $rootScope.$new();
+     inject(function($injector) {
+       scope = jasmine.createSpyObj("Root Scope Spy", ["$new"]);
        injector = $injector;
      });
      attrs = {withController: "SomeController"};
@@ -27,10 +27,10 @@
      transition.state.config = jasmine.createSpy("Transition State Config Spy");
      transService = jasmine.createSpy("Tansition Service Spy").andReturn(transition);
      augmentCtrl = jasmine.createSpy("Augment Controller Service Spy");
-     _screen = scope.$new(true);
+     _screen = jasmine.createSpyObj("Screen Layout Scope", ["$watch"]);
      _screen.name = name = "testScreenID";
      _screen.height = 300;
-     scope._block = _block = scope.$new(true);
+     scope._block = _block = {mock: "Block"};
      var locals = {
        $scope: scope,
        $element: element,
@@ -38,7 +38,7 @@
        transition: transService,
        augmentController: augmentCtrl
      }
-     spyOn(scope, "$new").andReturn(_screen);
+     scope.$new.andReturn(_screen);
      scope._screen = _screen;
      ctrl = injector.instantiate(ScreenDirectiveCtrl, locals);
      ctrl.init();
@@ -101,12 +101,18 @@
     });
     
     it("should augment the controller", function() {
+      var _blk = {mock: "Block"},
+          _lyt = {mock: "layout"};
+       ctrl.init(_blk, _lyt);
       expect(augmentCtrl).toHaveBeenCalledWith( "SomeController",
                                                 ctrl,
-                                                { $scope: scope, 
-                                                  $element: element, 
-                                                  $attrs: attrs, 
-                                                  $trans: transition });
+                                                {  $scope: scope, 
+                                                   $element: element, 
+                                                   $attrs: attrs, 
+                                                   _trans: transition,
+                                                   _screen: _screen,
+                                                   _block: _blk,
+                                                   _layout: _lyt} );
     });
  });
  

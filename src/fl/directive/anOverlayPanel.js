@@ -6,15 +6,18 @@
  * extends LayoutBlockBase & LayoutDisplayBase
  * 
  */
-function OverlayPanelDirectiveCtrl ($scope, $element, $attrs) {
+function OverlayPanelDirectiveCtrl ($scope, $element, $attrs, augmentController) {
   var self = this,
       panel = $scope._panel = this.layoutScope,
       name = panel.name = $attrs.withName,
+      extCtrl = $attrs.withController,
+      locals,
       trans = this.transition;
   $element.css("position", "absolute");
   $element.css("display", "block");
-  
   trans.bind({x: "css-x", y: "css-y"});
+  
+  
   // panel api
   /**
    * The side of the overlay frame that the panel aligns to
@@ -65,11 +68,21 @@ function OverlayPanelDirectiveCtrl ($scope, $element, $attrs) {
     }
   }
   
-  this.init = function(){
-    
+  this.init = function( _overlay ){
+     // augment controller
+     if(angular.isString(extCtrl) && extCtrl.length > 0) {
+       locals = { $scope: $scope, 
+                  $element: $element, 
+                  $attrs: $attrs, 
+                  _trans: trans,
+                  _panel: panel,
+                  _overlay: _overlay 
+                  };
+       augmentController(extCtrl, this, locals);
+     }
   }
 }
-OverlayPanelDirectiveCtrl.$inject = ["$scope", "$element", "$attrs"];
+OverlayPanelDirectiveCtrl.$inject = ["$scope", "$element", "$attrs", "augmentController"];
 OverlayPanelDirectiveCtrl = extendLayoutCtrl(LayoutBlockBase, LayoutDisplayBase, OverlayPanelDirectiveCtrl);
 
 /**
@@ -110,7 +123,7 @@ var anOverlayPanelDirective = ["$jQuery", function($jQuery){
          ctrl.layoutScope.$destroy();
        })
        // init
-       ctrl.init();
+       ctrl.init(scope._overlay);
        // show it
        ctrl.transitionIn();
        watchParent();

@@ -323,8 +323,9 @@ function extendLayoutCtrl (base, child){
      child.apply(this, args.slice(base.$inject.length));   
      inits.push(this.init||angular.noop);
      this.init = function(){
+       var args = Array.prototype.slice.call(arguments);
        angular.forEach(inits, function(initFn){
-         initFn.call(self);
+         initFn.apply(self, args);
        });
      }
    }; 

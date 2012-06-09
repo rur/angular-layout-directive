@@ -58,13 +58,15 @@ function BlockDirectiveCtrl ($scope, $element, $attrs, transition, augmentContro
   /** 
    * init function get called during linking phase
    */
-  this.init = function(){
+  this.init = function( _layout ){
     // augment controller
     if(angular.isString(extCtrl) && extCtrl.length > 0) {
       locals = { $scope: $scope, 
                  $element: $element, 
                  $attrs: $attrs, 
-                 $trans: trans };
+                 _trans: trans,
+                 _block: $scope,
+                 _layout: _layout };
       augmentController(extCtrl, this, locals);
     }
     trans.state("init");
@@ -101,9 +103,9 @@ var aBlockDirective =  function() {
        var layout = controllers[0],
            block = controllers[1],
            name = scope.name = layout.addChild(scope, iAttrs.withName),
-           layoutScope = layout.layoutScope;
+           _layout = layout.layoutScope;
        // Init
-       block.init();
+       block.init( _layout );
        // dispose
        scope.$on("$destroy", function(){
          block = layoutScope = layout = null;

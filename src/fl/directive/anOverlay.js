@@ -41,12 +41,11 @@
    }
    // 
    // init function get called during linking phase
-   this.init = function(){
+   this.init = function(parentScope){
      ////////////////
      // Setup parent scope for overlays
      //// This adds propeties and functions to the parent
      //// layout scope to manage overlays
-     var parentScope = $scope._parent;
      if (!parentScope.overlay) {
        parentScope.overlay_register = new Registry("Overlay Register");
        parentScope.overlay = function(name){
@@ -71,7 +70,9 @@
        locals = { $scope: $scope, 
                   $element: $element, 
                   $attrs: $attrs, 
-                  $trans: trans };
+                  _trans: trans,
+                  _overlay: overlay,
+                  _parent: parentScope };
        augmentController(extCtrl, this, locals);
      }
    }
@@ -142,7 +143,7 @@ OverlayDirectiveCtrl = extendLayoutCtrl(LayoutContainerBase, LayoutDisplayBase, 
           });
           // 
           // Init
-          overlay.init();
+          overlay.init(parentScope);
           watchParent();
           // 
           // 

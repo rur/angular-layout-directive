@@ -42,7 +42,8 @@ function LayoutDirectiveCtrl ($scope, $element, $attrs, transition, augmentContr
        locals = { $scope: $scope, 
                   $element: $element, 
                   $attrs: $attrs, 
-                  $trans: trans };
+                  _trans: trans,
+                  _layout: $scope };
        augmentController(extCtrl, this, locals);
      }
    }
@@ -72,10 +73,10 @@ var aLayoutDirective = [ "windowResizeWatcher", function(windowResizeWatcher) {
       // LINK
       link:function(scope, iElement, iAttrs, ctrl){
         scope.name = iAttrs.withName;
-                 // init
-                 // binds a listener to window resize event, which calls $rootScope#$apply() when it changes
-                 windowResizeWatcher();
-                 ctrl.init();
+       // init
+       // binds a listener to window resize event, which calls $rootScope#$apply() when it changes
+       windowResizeWatcher();
+       ctrl.init();
       }
     } 
   }];

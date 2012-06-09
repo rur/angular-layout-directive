@@ -47,13 +47,16 @@ function ScreenDirectiveCtrl($scope, $element, $attrs, augmentController){
   }
   // 
   // init function get called during linking phase
-  this.init = function(){
+  this.init = function(_block, _layout){
     // augment controller
     if(angular.isString(extCtrl) && extCtrl.length > 0) {
       locals = { $scope: $scope, 
                  $element: $element, 
                  $attrs: $attrs, 
-                 $trans: trans };
+                 _trans: trans,
+                 _screen: screen,
+                 _block: _block,
+                 _layout: _layout };
       augmentController(extCtrl, this, locals);
     }
   }
@@ -120,7 +123,7 @@ ScreenDirectiveCtrl = extendLayoutCtrl(LayoutBlockBase, LayoutDisplayBase, Scree
         // 
         // Init
         // if this is first screen registered, show it
-        screen.init();
+        screen.init( blockScope, layoutScope);
         if(!blockScope.currentScreen) {
           screenScope.show();
           toggleContent(true);

@@ -6,6 +6,7 @@
  */
   describe("BlockDirectiveCtrl", function() {
     var scope,
+        _layout,
         element,
         attrs,
         transService,
@@ -20,6 +21,7 @@
         scope = $rootScope.$new();
         injector = $injector;
       });
+      _layout = {mock: "layoutScope"};
       transition = jasmine.createSpyObj("Transition Spy", ["state", "bind", "addSuite"]);
       transition.state.config = jasmine.createSpy("Transition State Config Spy");
       transService = jasmine.createSpy("Tansition Service Spy").andReturn(transition);
@@ -35,7 +37,7 @@
       }
       spyOn(scope, "$watch").andCallThrough();
       ctrl = injector.instantiate(BlockDirectiveCtrl, locals);
-      ctrl.init();
+      ctrl.init(_layout);
     });
   
     it("should instanciate the BlockDirectiveCtrl", function() {
@@ -91,7 +93,9 @@
                                                { $scope: scope, 
                                                  $element: element, 
                                                  $attrs: attrs, 
-                                                 $trans: transition });
+                                                 _trans: transition,
+                                                 _block: scope,
+                                                 _layout: _layout});
     });
   
     it("should add a child returning an id", function() {

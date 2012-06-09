@@ -34,9 +34,9 @@ describe("directives", function() {
       }
       Ctrl2.$inject = [];
       ctrl = $injector.instantiate(extendLayoutCtrl(Ctrl1, Ctrl2));
-      ctrl.init();
-      expect(init1).toHaveBeenCalled();
-      expect(init2).toHaveBeenCalled();
+      ctrl.init(123);
+      expect(init1).toHaveBeenCalledWith(123);
+      expect(init2).toHaveBeenCalledWith(123);
     }));
     it("should pass on prototype methods", inject(function($injector) {
       var proto1 = jasmine.createSpy("Ctrl1 Proto Method Spy"),

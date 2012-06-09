@@ -21,7 +21,7 @@ describe("OverlayPanelDirectiveCtrl", function() {
       scope = $rootScope.$new();
       injector = $injector;
     });
-    attrs = {withController: "SomeController"};
+    attrs = {withController: "SomeController", anOverlayPanel: "left"};
     element = angular.element(document.createElement("div"));
     transition = jasmine.createSpyObj("Transition Spy", ["state", "bind", "addSuite"]);
     transition.state.config = jasmine.createSpy("Transition State Config Spy");
@@ -35,8 +35,9 @@ describe("OverlayPanelDirectiveCtrl", function() {
     var locals = {
       $scope: scope,
       $element: element,
-      $attrs: {anOverlayPanel: "left"},
-      transition: transService
+      $attrs: attrs,
+      transition: transService,
+      augmentController: augmentCtrl
     }
     ctrl = injector.instantiate(OverlayPanelDirectiveCtrl, locals);
   });
@@ -134,6 +135,19 @@ describe("OverlayPanelDirectiveCtrl", function() {
       expect(_panel.x).toEqual(100);
       expect(_panel.y).toEqual(100);
     });
+  });
+  
+  it("should augment the controller", function() {
+    ctrl.init(_overlay);
+    expect(augmentCtrl).toHaveBeenCalledWith( "SomeController",
+                                              ctrl,
+                                              { $scope: scope, 
+                                                $element: element, 
+                                                $attrs: attrs, 
+                                                _trans: transition,
+                                                _panel: _panel,
+                                                _overlay: _overlay
+                                                });
   });
 });
 
