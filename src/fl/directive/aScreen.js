@@ -120,8 +120,12 @@ ScreenDirectiveCtrl = extendLayoutCtrl(LayoutBlockBase, LayoutDisplayBase, Scree
                         screenScope.contentWidth = newval;
                       } );
         // listeners
-        scope.$on("transitionedOut", function(){
-          clearContent();
+        screenScope.$watch("transState", function(val){
+          switch(val){
+            case "transitionedOut":
+              clearContent();
+              break;
+          }
         });
         // 
         // Init
