@@ -5,7 +5,8 @@ describe("transition", function() {
   var transition, 
       localTrans, 
       scope, 
-      element;
+      element,
+      consnt;
   beforeEach(function() {
     module("flLayout");
     inject(function($injector) {
@@ -106,6 +107,17 @@ describe("transition", function() {
       TestRunSuite.prototype.testVal = "testValue";
       localTrans.addSuite( TestRunSuite );
       expect(constWasCalled).toBeTruthy();
+    });
+    
+    it("should instanciate a transition suite injecting dependencies", function() {
+      var transService;
+      function TestSuite (trans) {
+        transService = trans;
+        this.fire = angular.noop;
+      }
+      TestSuite.$inject = ["transition"]
+      localTrans.addSuite( TestSuite );
+      expect(transService).toEqual(transition);
     });
     
     it("should call the bound transition property functions", function() {

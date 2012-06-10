@@ -83,8 +83,6 @@
       html = el.html();
       expect(html).toMatch(/width: 100%/i);
       expect(html).toMatch(/position: absolute/i);
-      expect(html).toMatch(/overflow(-x)?: hidden/i);
-      expect(html).toMatch(/overflow(-y)?: hidden/i);
     });
   
     it("should augment the controller", function() {

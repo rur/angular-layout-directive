@@ -25,7 +25,7 @@ function TransitionProvider () {
     defaultSuites.push(constructor);
   }
   
-  this.$get = [ "$exceptionHandler", function transitionFactory ($exceptionHandler) {
+  this.$get = [ "$exceptionHandler", "$injector", function transitionFactory ($exceptionHandler, $injector) {
     /**
      * TransitionService 
      * Creates a new Transition instance which allows the provided scopes properties to be 
@@ -269,7 +269,7 @@ function TransitionProvider () {
        * @param {function} constructor A transition suite constructor implementing a fire method and registering transition listeners
        */
       this.addSuite = function(constructor){
-        var suite = new (extendClass(TransitionSuiteBase, constructor))();
+        var suite = $injector.instantiate(extendClass(TransitionSuiteBase, constructor));
         if(!angular.isFunction(suite.fire)){ 
           $exceptionHandler("Transition suite ["+constructor.name+"] Class must have a 'fire' instance method.");
         }
@@ -313,16 +313,19 @@ function TransitionProvider () {
       }
       
       // used when extending TransitionSuiteBase
-      // TODO: Allow the transition suite definitions to be injectable
       function extendClass(base, child){
-        // notice this method doesn't bother with constructor arguments
+        base.$inject = base.$inject || [];
+        child.$inject = child.$inject || [];
         function Extended(){
-          base.apply(this);
-          child.apply(this);
+           var self = this,
+               args = Array.prototype.slice.call(arguments);
+          base.apply(this, args.slice(0, base.$inject.length));
+          child.apply(this, args.slice(base.$inject.length));
         }
         function Inherit(){};
         Inherit.prototype = angular.extend({}, base.prototype, child.prototype);
         Extended.prototype = new Inherit();
+        Extended.$inject = [].concat(base.$inject).concat(child.$inject);
         return Extended;
       }
       

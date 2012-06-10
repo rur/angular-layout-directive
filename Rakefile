@@ -31,7 +31,7 @@ task :compile => [:init] do
   concat_file('fl_layout.js', [
         'src/layout.prefix',
         files['layoutSrc'],
-        'src/layout.suffix',
+        'src/layout.suffix'
       ], gen_css('css/layout.css', true));
       
   closure_compile('fl_layout.js');

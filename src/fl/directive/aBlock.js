@@ -20,8 +20,6 @@ function BlockDirectiveCtrl ($scope, $element, $attrs, transition, augmentContro
   trans.bind("y", "css-y");
   
   $element.css("width","100%");
-  $element.css("overflow-x","hidden");
-  $element.css("overflow-y","hidden");
   $element.css("position","absolute");
   
   ////////////////
