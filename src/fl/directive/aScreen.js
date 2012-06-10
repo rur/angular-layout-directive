@@ -59,6 +59,7 @@ function ScreenDirectiveCtrl($scope, $element, $attrs, augmentController){
                  _layout: _layout };
       augmentController(extCtrl, this, locals);
     }
+    screen.$broadcast("init");
   }
   // 
   // make it easier to override these functions
@@ -128,8 +129,8 @@ ScreenDirectiveCtrl = extendLayoutCtrl(LayoutBlockBase, LayoutDisplayBase, Scree
         var dereg = blockScope.$on("init",function(){
           if(!blockScope.currentScreen) {
             screenScope.show();
-            toggleContent(true);
           }
+          toggleContent(screenScope.displaying());
         })
         
         // dispose

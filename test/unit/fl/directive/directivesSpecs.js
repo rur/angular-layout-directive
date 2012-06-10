@@ -195,12 +195,6 @@ describe("directives", function() {
       ctrl.setLayoutScope(newScope);
       expect(ctrl.layoutScope).toEqual(newScope);
     });
-    
-    it("should dispatch 'init' event from the layoutScope after the init function has been called", function() {
-      spyOn(scope, "$broadcast");
-      ctrl.init();
-      expect(scope.$broadcast).toHaveBeenCalledWith("init");
-    });
   });
   
   describe("LayoutBlockBase", function() {

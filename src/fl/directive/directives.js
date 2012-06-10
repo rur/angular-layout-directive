@@ -110,7 +110,6 @@
          self.reflow();
      }
      self.layout(self.defaultLayout());
-     layoutScope.$broadcast("init");
    }
    
    

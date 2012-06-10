@@ -27,7 +27,7 @@
      transition.state.config = jasmine.createSpy("Transition State Config Spy");
      transService = jasmine.createSpy("Tansition Service Spy").andReturn(transition);
      augmentCtrl = jasmine.createSpy("Augment Controller Service Spy");
-     _screen = jasmine.createSpyObj("Screen Layout Scope", ["$watch"]);
+     _screen = jasmine.createSpyObj("Screen Layout Scope", ["$watch", "$broadcast"]);
      _screen.name = name = "testScreenID";
      _screen.height = 300;
      scope._block = _block = {mock: "Block"};
@@ -114,6 +114,10 @@
                                                    _block: _blk,
                                                    _layout: _lyt} );
     });
+    
+     it("should dispatch 'init' event from the layoutScope after the init function has been called", function() {
+       expect(_screen.$broadcast).toHaveBeenCalledWith("init");
+     });
  });
  
  describe('aScreenDirective', function() {

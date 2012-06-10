@@ -68,6 +68,7 @@ function BlockDirectiveCtrl ($scope, $element, $attrs, transition, augmentContro
       augmentController(extCtrl, this, locals);
     }
     trans.state("init");
+    $scope.$broadcast("init");
   }
   
   // make it easier to override these functions

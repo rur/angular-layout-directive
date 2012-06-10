@@ -46,6 +46,7 @@ function LayoutDirectiveCtrl ($scope, $element, $attrs, transition, augmentContr
                   _layout: $scope };
        augmentController(extCtrl, this, locals);
      }
+     $scope.$broadcast("init");
    }
    // 
    var __super = this._super || {};

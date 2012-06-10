@@ -155,6 +155,12 @@
     it("should have a super object with a backup reference to its methods", function() {
       expect(ctrl._super.defaultLayout).toEqual(ctrl.defaultLayout);
     });
+    
+     it("should dispatch 'init' event from the layoutScope after the init function has been called", function() {
+       spyOn(scope, "$broadcast");
+       ctrl.init();
+       expect(scope.$broadcast).toHaveBeenCalledWith("init");
+     });
   });
   
   describe('aBlockDirective', function() {
