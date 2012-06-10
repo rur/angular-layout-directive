@@ -134,6 +134,11 @@ function TransitionProvider () {
         angular.forEach(un$watchers, function(un$watch){
           un$watch();
         });
+        angular.forEach(suites, function(suite){
+          if(angular.isFunction(suite.dispose)){
+            suite.dispose();
+          }
+        });
         un$watchers = null;
         fireParams = null;
         scope = null;

@@ -273,6 +273,17 @@ describe("transition", function() {
       expect(fireSpy.callCount).toEqual(1);
     });
     
+    it("should call dispose on a suite instance", function() {
+      var disposeSpy = jasmine.createSpy("Dispose Transition Suite Spy")
+      function TestSuite2 () {
+        this.fire = function(){};
+        this.dispose = disposeSpy;
+      }
+      localTrans.addSuite(TestSuite2);
+      localTrans.dispose();
+      expect(disposeSpy).toHaveBeenCalled();
+    });
+    
     describe("DefaultTransitionSuite", function() {
       it("should call an onComplete method supplied to config params", function() {
         var completeSpy = jasmine.createSpy("CSS on complete spy");
