@@ -92,6 +92,7 @@ describe("directives", function() {
         scope,
         injector,
         locals;
+        
     beforeEach(inject(function($rootScope, $injector) {
       scope = $rootScope.$new();
       injector = $injector;
@@ -101,10 +102,12 @@ describe("directives", function() {
       ctrl = injector.instantiate(LayoutContainerBase, locals);
       ctrl.init();
     }));
+    
     it("should instanciate LayoutContainerBase", function() {
       expect(ctrl).not.toBeNull();
       expect(ctrl).toBeDefined();
     });
+    
     it("should add child properties to the scope object", function() {
       expect(scope.children).toEqual([]);
       expect(scope.childrenByName).toEqual({});
@@ -191,6 +194,12 @@ describe("directives", function() {
       var newScope = jasmine.createSpyObj("Layout Scope Spy", ["$emit" , "$watch"])
       ctrl.setLayoutScope(newScope);
       expect(ctrl.layoutScope).toEqual(newScope);
+    });
+    
+    it("should dispatch 'init' event from the layoutScope after the init function has been called", function() {
+      spyOn(scope, "$broadcast");
+      ctrl.init();
+      expect(scope.$broadcast).toHaveBeenCalledWith("init");
     });
   });
   

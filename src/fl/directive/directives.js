@@ -109,7 +109,8 @@
      layoutScope.reflow = function(){
          self.reflow();
      }
-     self.layout(self.defaultLayout())
+     self.layout(self.defaultLayout());
+     layoutScope.$broadcast("init");
    }
    
    

@@ -124,15 +124,20 @@ ScreenDirectiveCtrl = extendLayoutCtrl(LayoutBlockBase, LayoutDisplayBase, Scree
         // Init
         // if this is first screen registered, show it
         screen.init( blockScope, layoutScope);
-        if(!blockScope.currentScreen) {
-          screenScope.show();
-          toggleContent(true);
-        }
+        
+        var dereg = blockScope.$on("init",function(){
+          if(!blockScope.currentScreen) {
+            screenScope.show();
+            toggleContent(true);
+          }
+        })
+        
         // dispose
         scope.$on("$destroy", function(){
           screen = block = layout = null;
           screenScope = blockScope = layoutScope = null;
           scope._layout = scope._block = scope._screen = null;
+          dereg();
         });
         // 
         // private
