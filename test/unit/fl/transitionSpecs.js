@@ -70,6 +70,15 @@ describe("transition", function() {
     expect(scope.y).toEqual("100%");
   });
   
+  it("should trigger states multiple times", function() {
+    spyOn(localTrans, "apply");
+    localTrans.state.config("state1", {x:123,y:"100%"}, {param: "value"});
+    localTrans.state("state1");
+    localTrans.state("state1");
+    expect(localTrans.apply).toHaveBeenCalledWith({x:123,y:"100%"}, {param: "value"});
+    expect(localTrans.apply.callCount).toEqual(2);
+  });
+  
   it("should call unwatch functions when the scope dispatches $destroy", function() {
     var unwatcherSpy = jasmine.createSpy("unwatch function");
     spyOn(scope, "$watch").andReturn(unwatcherSpy);
@@ -152,15 +161,30 @@ describe("transition", function() {
     it("should apply element and parameters hash to the fire function", function() {
       localTrans.state.config("test2", {prop:123}, {a: "value2"});
       scope.$digest();
+      // expect(fireSpy).toHaveBeenCalledWith("Anything at all");
       localTrans.apply({prop: 654},{a: "value1"});
       scope.$digest();
+      expect(fireSpy).toHaveBeenCalledWith(element, {a: "value1"});
       scope.prop = 12345;
       scope.$digest();
+      expect(fireSpy).toHaveBeenCalledWith(element, undefined);
       localTrans.state("test2");
       scope.$digest();
       expect(fireSpy.callCount).toEqual(4);
-      expect(fireSpy).toHaveBeenCalledWith(element, {a: "value1"});
       expect(fireSpy).toHaveBeenCalledWith(element, {a: "value2"});
+    });
+    
+    
+    
+    it("should pass state fire params multiple times", function() {
+      spyOn(localTrans, "apply").andCallThrough();
+      localTrans.state.config("test", {prop:123}, {a: "value"});
+      localTrans.state("test");
+      scope.$digest();
+      localTrans.state("test");
+      scope.$digest();
+      expect(localTrans.apply.callCount).toBe(2);
+      expect(fireSpy.callCount).toBe(2)
     });
     
     it("should call a function when it is passed to apply", function() {

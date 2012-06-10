@@ -111,11 +111,13 @@ ScreenDirectiveCtrl = extendLayoutCtrl(LayoutBlockBase, LayoutDisplayBase, Scree
         screenScope.$watch( function(){ return $jQuery(iElement).children(".a-screen-content").height(); },
                       function(newval){ 
                         screenScope.height = newval;
+                        screenScope.contentHeight = newval;
                       } );
         // watch the width of the element
         screenScope.$watch( function(){ return $jQuery(iElement).children(".a-screen-content").width(); },
                       function(newval){ 
                         screenScope.width = newval;
+                        screenScope.contentWidth = newval;
                       } );
         // listeners
         scope.$on("transitionedOut", function(){

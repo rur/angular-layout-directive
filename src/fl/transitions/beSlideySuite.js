@@ -40,7 +40,7 @@
     this.fire = function(element, config){
       var dur = config && config["duration"] || 300,
           onComplete = config && config["onComplete"] || angular.noop;
-      $(element).animate(self.props, {duration: dur, queue: false}, onComplete);
+      $(element).animate(self.props, {duration: dur, queue: false, complete: onComplete});
       self.props = {};
     }
  }

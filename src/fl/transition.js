@@ -207,7 +207,8 @@ function TransitionProvider () {
       /**
        * Apply a set of properties and values to the scope. Any transition bindings will be triggered as a result.
        * 
-       * The main difference between this and just applying values to the scope directly is that
+       * The main differences between this and just applying values to the scope directly is that
+       * it forces the animations even if the values havent changed on the scope and 
        * you can pass a configuration hash which will be available to all transition fire methods that
        * get triggered in this scope.$digest cycle. This is what Transition#state uses to apply the state to the scope
        * 
@@ -226,7 +227,13 @@ function TransitionProvider () {
             if(angular.isFunction(value)){
               scope[prop] = value.call(scope);
             } else {
-              scope[prop] = value;
+              if(scope[prop] != value){ 
+                scope[prop] = value;
+              } else {
+                // value hasnt changed so force transition anyway
+                (getTransitionPropertyFunction(prop))(value, value);
+                doFire = true;
+              }
             }
           }
           fireParams = params || {};
