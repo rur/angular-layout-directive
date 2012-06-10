@@ -106,7 +106,7 @@ var aBlockDirective =  function() {
        block.init( _layout );
        // dispose
        scope.$on("$destroy", function(){
-         block = layoutScope = layout = null;
+         block = _layout = null;
        });
      }
    } 
