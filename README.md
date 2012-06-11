@@ -79,6 +79,7 @@ Overlays work very similarly to screens, here are a few of the important differe
 		...
 	</an-overlay>
 
+
 "\_parent" is a reference to it containers layout scope. This will be either a layout, block or screen. "\_overlay" is reference to its own isolated layout scope, similar to how screens work.
 
 Overlays are controlled through the layout scope of its parent like so:
