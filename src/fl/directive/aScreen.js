@@ -104,8 +104,11 @@ ScreenDirectiveCtrl = extendLayoutCtrl(LayoutBlockBase, LayoutDisplayBase, Scree
         // Watchers and Listeners
         // add/remove template 
         screenScope.$watch("displaying()", function(newval, oldval){
-                          if(newval == oldval) return;
-                          toggleContent(newval)
+                          if(newval && !(/In$/).test(screenScope.transState)) {
+                            toggleContent(true);
+                          } else if(!newval && !(/Out$/).test(screenScope.transState)){
+                            toggleContent(false);
+                          }
                         });
         // watch the height of the element
         screenScope.$watch( function(){ return $jQuery(iElement).children(".a-screen-content").height(); },
