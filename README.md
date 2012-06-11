@@ -2,9 +2,10 @@
 I'm using this readme is more of a spec-sheet so some information may be out of date.
 
 *some links*
-[Kitten Pound Demo](http://jsfiddle.net/rur_d/htwXa/)
-[Compiled Source](http://fluid-src.appspot.com/angular-layout/1.0/fl_layout.js)
-[Compiled Source Minified](http://fluid-src.appspot.com/angular-layout/1.0/fl_layout.min.js)
+--------------------
+ - [Kitten Pound Demo](http://jsfiddle.net/rur_d/htwXa/)
+ - [Compiled Source](http://fluid-src.appspot.com/angular-layout/1.0/fl_layout.js)
+ - [Compiled Source Minified](http://fluid-src.appspot.com/angular-layout/1.0/fl_layout.min.js)
 
 
 #Layout Component#
@@ -78,7 +79,7 @@ Overlays work very similarly to screens, here are a few of the important differe
 		...
 	</an-overlay>
 
-\_parent is a reference to it containers layout scope. This will be either a layout, block or screen. \_overlay is reference to its own isolated layout scope, similar to how screens work.
+"\_parent" is a reference to it containers layout scope. This will be either a layout, block or screen. "\_overlay" is reference to its own isolated layout scope, similar to how screens work.
 
 Overlays are controlled through the layout scope of its parent like so:
 
