@@ -85,7 +85,7 @@ ScreenDirectiveCtrl = extendLayoutCtrl(LayoutBlockBase, LayoutDisplayBase, Scree
      //////////////////
      // COMPILE
      compile:function(element, attr){
-       var template = '<div class="a-screen-content" style="display: inline-block; width: 100%;">'+element.html()+"</div>";
+       var template = '<div class="a-screen-content" style="overflow: auto; width: 100%;">'+element.html()+"</div>";
        // var template = element.html();
        element.html("");
        //////////////
@@ -106,8 +106,10 @@ ScreenDirectiveCtrl = extendLayoutCtrl(LayoutBlockBase, LayoutDisplayBase, Scree
         screenScope.$watch("displaying()", function(newval, oldval){
                           if(newval && !(/In$/).test(screenScope.transState)) {
                             toggleContent(true);
+                            screen.transitionIn();
                           } else if(!newval && !(/Out$/).test(screenScope.transState)){
                             toggleContent(false);
+                            screen.transitionOut();
                           }
                         });
         // watch the height of the element
@@ -140,6 +142,7 @@ ScreenDirectiveCtrl = extendLayoutCtrl(LayoutBlockBase, LayoutDisplayBase, Scree
             screenScope.show();
           }
           toggleContent(screenScope.displaying());
+          if(screenScope.displaying()) screen.transitionIn();
         })
         
         // dispose
@@ -159,9 +162,9 @@ ScreenDirectiveCtrl = extendLayoutCtrl(LayoutBlockBase, LayoutDisplayBase, Scree
             childScope = scope.$new();
             iElement.html(template);
             $compile(iElement.contents())(childScope);
-            screen.transitionIn();
+            // screen.transitionIn();
           } else {
-            screen.transitionOut();
+            // screen.transitionOut();
           }
         }
         function clearContent(){
