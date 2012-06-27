@@ -68,6 +68,15 @@ function OverlayPanelDirectiveCtrl ($scope, $element, $attrs, augmentController)
     }
   }
   
+  // 
+  this.refreshContentHeight = function(){
+    panel.height = panel.contentHeight;
+  }
+  // 
+  this.refreshContentWidth = function(){
+    panel.width = panel.contentWidth;
+  }
+  
   this.init = function( _overlay ){
      // augment controller
      if(angular.isString(extCtrl) && extCtrl.length > 0) {
@@ -108,12 +117,14 @@ var anOverlayPanelDirective = ["$jQuery", function($jQuery){
        });
        scope.$watch(function(){ return $jQuery(elm).children(".an-overlay-panel-content").height(); },
          function(newval){
-           panel.height = newval;
+           panel.contentHeight = newval;
+           ctrl.refreshContentHeight();
          }
        );
        scope.$watch(function(){ return $jQuery(elm).children(".an-overlay-panel-content").width(); },
          function(newval){
-           panel.width = newval;
+            panel.contentWidth = newval;
+            ctrl.refreshContentWidth();
          }
        );
        // 
