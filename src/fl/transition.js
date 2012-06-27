@@ -241,8 +241,8 @@ function TransitionProvider () {
               }
             }
           }
-          fireParams = params || {};
-        }
+        }  
+        fireParams = params || {};
       }
       
       /**
