@@ -46,6 +46,13 @@ function ScreenDirectiveCtrl($scope, $element, $attrs, augmentController){
     return ($scope._block.currentScreen == screen.name);
   }
   // 
+  this.refreshContentHeight = function(){
+    screen.height = screen.contentHeight;
+  }
+  // 
+  this.refreshContentWidth = function(){
+    screen.width = screen.contentWidth;
+  }
   // init function get called during linking phase
   this.init = function(_block, _layout){
     // augment controller
@@ -65,6 +72,8 @@ function ScreenDirectiveCtrl($scope, $element, $attrs, augmentController){
   // make it easier to override these functions
   var __super = this._super || {};
   this._super = angular.extend({}, __super, {
+    refreshContentHeight: self.refreshContentHeight, 
+    refreshContentWidth: self.refreshContentWidth
     // add any instance methods as properties of this hash
   });
 }
@@ -115,14 +124,16 @@ ScreenDirectiveCtrl = extendLayoutCtrl(LayoutBlockBase, LayoutDisplayBase, Scree
         // watch the height of the element
         screenScope.$watch( function(){ return $jQuery(iElement).children(".a-screen-content").height(); },
                       function(newval){ 
-                        screenScope.height = newval;
+                        // screenScope.height = newval;
                         screenScope.contentHeight = newval;
+                        screen.refreshContentHeight();
                       } );
         // watch the width of the element
         screenScope.$watch( function(){ return $jQuery(iElement).children(".a-screen-content").width(); },
                       function(newval){ 
-                        screenScope.width = newval;
+                        // screenScope.width = newval;
                         screenScope.contentWidth = newval;
+                        screen.refreshContentWidth();
                       } );
         // listeners
         screenScope.$watch("transState", function(val){
