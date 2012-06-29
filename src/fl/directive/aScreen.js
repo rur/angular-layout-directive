@@ -108,11 +108,13 @@ ScreenDirectiveCtrl = extendLayoutCtrl(LayoutBlockBase, LayoutDisplayBase, Scree
             blockScope  = scope._block  = block.layoutScope,
             layoutScope = scope._layout  = layout.layoutScope,
             name = screenScope.name = block.addChild(screenScope, iAttrs.withName),
-            childScope;
+            childScope,
+            displaying = false;
         //
         // Watchers and Listeners
         // add/remove template 
         screenScope.$watch("displaying()", function(newval, oldval){
+                          if(newval === displaying) return;
                           if(newval && !(/In$/).test(screenScope.transState)) {
                             toggleContent(true);
                             screen.transitionIn();
@@ -120,6 +122,7 @@ ScreenDirectiveCtrl = extendLayoutCtrl(LayoutBlockBase, LayoutDisplayBase, Scree
                             toggleContent(false);
                             screen.transitionOut();
                           }
+                          displaying = newval;
                         });
         // watch the height of the element
         screenScope.$watch( function(){ return $jQuery(iElement).children(".a-screen-content").height(); },

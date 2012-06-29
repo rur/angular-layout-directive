@@ -236,28 +236,25 @@
        layout = this.layoutScope = $scope.$new(true),
        trans = this.transition = transition(layout, $element);
    
-   trans.state.config("init", {hidden: true});    
-   trans.state.config("show", {hidden: false}, {onComplete:function(){
+   trans.state.config("init", {});    
+   trans.state.config("show", function(){
        self.transitionInComplete();
-     }
-   });
-   trans.state.config("hide", {hidden: true}, {onComplete:function(){
+     });
+   trans.state.config("hide", function(){
        self.transitionOutComplete();
-     }
    });   
-   trans.bind({ hidden: "css-hidden"});
    
    /**
     * compute the height of this display
     */
    layout.calculateHeight = function () {
-    return layout.hidden ? 0 : layout.height;
+    return layout.height;
    } 
    /**
     * compute the width of this display
     */
    layout.calculateWidth = function () {
-    return layout.hidden ? 0 : layout.width;
+    return layout.width;
    }
    
    ////////////////

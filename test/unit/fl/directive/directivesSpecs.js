@@ -311,20 +311,25 @@ describe("directives", function() {
       var args;
       spyOn(ctrl, "transitionInComplete");
       spyOn(ctrl, "transitionOutComplete");
-      var checkOnComplete = function(args){
-        if( args && angular.isFunction(args["onComplete"])){
-          args["onComplete"]();
-          return true;
-        }
-        return false;
-      }
       // assertions
-      expect(transition.bind).toHaveBeenCalledWith({ hidden: "css-hidden"});
-      expect(transition.state.config).toHaveBeenCalledWith("init", {hidden: true});
+      // expect(transition.bind).toHaveBeenCalledWith({ hidden: "css-hidden"}); // no it shouldnt
+      expect(transition.state.config).toHaveBeenCalledWith("init", {});
       expect(transition.state.config)
-        .toHaveBeenCalledWithAndTest("show", {hidden: false}, checkOnComplete);
+        .toHaveBeenCalledWithAndTest("show", function(val){
+          if(angular.isFunction(val)){
+            val();
+            return true;
+          }
+          return false;
+        });
       expect(transition.state.config)
-        .toHaveBeenCalledWithAndTest("hide", {hidden: true}, checkOnComplete);
+        .toHaveBeenCalledWithAndTest("hide", function(val){
+          if(angular.isFunction(val)){
+            val();
+            return true;
+          }
+          return false;
+        });
       expect(ctrl.transitionInComplete).toHaveBeenCalled();
       expect(ctrl.transitionOutComplete).toHaveBeenCalled();
     });
@@ -333,9 +338,10 @@ describe("directives", function() {
       layoutScope.width = 120;
       expect(layoutScope.calculateHeight()).toEqual(100);
       expect(layoutScope.calculateWidth()).toEqual(120);
-      layoutScope.hidden = true;
-      expect(layoutScope.calculateHeight()).toEqual(0);
-      expect(layoutScope.calculateWidth()).toEqual(0);
+      // layoutScope.hidden = true;
+      // expect(layoutScope.calculateHeight()).toEqual(0); 
+      // expect(layoutScope.calculateWidth()).toEqual(0);
+      // // not any more!
     });
     it("should have transition functions which broadcast events", function() {
       expect(layoutScope.transState).toEqual("initializing");
