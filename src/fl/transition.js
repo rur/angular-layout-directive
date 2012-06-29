@@ -61,9 +61,7 @@ function TransitionProvider () {
      */
     function Transition ( scope, element ) {
       var trans = this,
-          suites = [],
           doFire = false,
-          fireParams,
           un$watchers = [],
           un$watchersHash = {},
           disposed = false;
@@ -73,7 +71,7 @@ function TransitionProvider () {
       //////////////////////////
       un$watchers.push(scope.$watch(function () {
         if(doFire){
-          fire();
+          trans.fire();
           doFire = false;
         }
       }));
@@ -85,6 +83,17 @@ function TransitionProvider () {
       //////////////////////////
       // Public Properties
       //////////////////////////
+      this.fireParams = {};
+      this.suites = [];
+      this.halted = false;
+      
+      this.halt = function(){
+        trans.halted = true;
+      }
+      
+      this.resume = function(){
+        trans.halted = false;
+      }
       /**
        * Hash map with the configued transition states.
        * 
@@ -131,16 +140,17 @@ function TransitionProvider () {
        * This gets called automatically when the bound scope broadcasts the $destroy event
        */
       this.dispose = function (){
+        this.halt();
         angular.forEach(un$watchers, function(un$watch){
           un$watch();
         });
-        angular.forEach(suites, function(suite){
+        angular.forEach(trans.suites, function(suite){
           if(angular.isFunction(suite.dispose)){
             suite.dispose();
           }
         });
         un$watchers = null;
-        fireParams = null;
+        trans.fireParams = null;
         scope = null;
         element = null;
         disposed = true;
@@ -173,6 +183,7 @@ function TransitionProvider () {
         transProp = validateAndTrimProperty(transProp, "transition");
         if(!trans.bindings.hasOwnProperty(scopeProp)){
           un$watchers.push( scope.$watch(scopeProp,function (newval, oldval) {
+            if(trans.halted) return;
             (getTransitionPropertyFunction(scopeProp))(newval, oldval);
             doFire = true;
           }));
@@ -224,6 +235,7 @@ function TransitionProvider () {
       this.apply = function(props, params){
         var prop,
             value;
+        if(trans.halted) return;
         if(angular.isFunction(props)){
           props.call(scope);
         } else {
@@ -242,7 +254,7 @@ function TransitionProvider () {
             }
           }
         }  
-        fireParams = params || {};
+        trans.fireParams = params || {};
       }
       
       /**
@@ -285,26 +297,27 @@ function TransitionProvider () {
         if(!angular.isFunction(suite.fire)){ 
           $exceptionHandler("Transition suite ["+constructor.name+"] Class must have a 'fire' instance method.");
         }
-        suites.unshift(suite);
+        trans.suites.unshift(suite);
+      }
+      
+      this.fire = function () {
+        var suite;
+        for (var i=0; i < trans.suites.length; i++) {
+          suite = trans.suites[i]
+          if(suite.onCue){
+            suite.fire( element, trans.fireParams );
+            suite.onCue = false;
+          }
+        };
+        if(trans.fireParams && angular.isFunction(trans.fireParams["afterFire"])){
+          (trans.fireParams["afterFire"])();
+        }
+        trans.fireParams = undefined;
       }
       
       //////////////////////////
       // Private methods
       //////////////////////////
-      function fire () {
-        var suite;
-        for (var i=0; i < suites.length; i++) {
-          suite = suites[i]
-          if(suite.onCue){
-            suite.fire( element, fireParams );
-            suite.onCue = false;
-          }
-        };
-        if(fireParams && angular.isFunction(fireParams["afterFire"])){
-          (fireParams["afterFire"])();
-        }
-        fireParams = undefined;
-      }
       
       function getTransitionPropertyFunction (scopeProperty) {
         var suite,
@@ -314,8 +327,8 @@ function TransitionProvider () {
           $exceptionHandler( "Transition: No transition binding found for "+
                              scopeProperty+" but one was expected");
         }
-        for (var i=0; i < suites.length; i++) {
-          suite = suites[i]
+        for (var i=0; i < trans.suites.length; i++) {
+          suite = trans.suites[i]
           transFn = suite.transitionProps[property];
           if(angular.isFunction(transFn)) {
             return transFn;
@@ -379,4 +392,6 @@ function TransitionProvider () {
     }
   }]
 }
+
+
 

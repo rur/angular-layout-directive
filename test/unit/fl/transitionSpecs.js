@@ -158,6 +158,19 @@ describe("transition", function() {
       expect(aniPropSpy).toHaveBeenCalledWith("testValue", "testValue");
     });
     
+    it("should halt the firing of transition bindings", function() {
+       localTrans.halt();
+       scope.$digest();
+       expect(aniPropSpy).not.toHaveBeenCalled();
+    });
+    
+    it("should resume the firing of transition bindings", function() {
+       localTrans.halt();
+       localTrans.resume();
+       scope.$digest();
+       expect(aniPropSpy).toHaveBeenCalled();
+    });
+    
     it("should apply element and parameters hash to the fire function", function() {
       localTrans.state.config("test2", {prop:123}, {a: "value2"});
       scope.$digest();
@@ -173,8 +186,6 @@ describe("transition", function() {
       expect(fireSpy.callCount).toEqual(4);
       expect(fireSpy).toHaveBeenCalledWith(element, {a: "value2"});
     });
-    
-    
     
     it("should pass state fire params multiple times", function() {
       spyOn(localTrans, "apply").andCallThrough();
@@ -283,6 +294,7 @@ describe("transition", function() {
       localTrans.dispose();
       expect(disposeSpy).toHaveBeenCalled();
     });
+    
     
     describe("DefaultTransitionSuite", function() {
       it("should call an onComplete method supplied to config params", function() {
