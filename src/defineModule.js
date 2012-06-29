@@ -21,4 +21,8 @@ function declareLayoutModule(){
     }]);
 }
 
+window.flLayout = {
+  BeSlideyTransitionSuite: BeSlideyTransitionSuite 
+}
+
 
