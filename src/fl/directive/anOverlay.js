@@ -21,6 +21,15 @@
    $element.css("z-index","100");
    $element.css("top","0px");
    $element.css("left","0px");
+   // transition
+   trans.bind("hidden", "css-hidden");
+   trans.state.config("init", {hidden: true});
+   trans.state.config("show", {hidden: false}, {onComplete: function(){
+    self.transitionInComplete();
+   }});
+   trans.state.config("hide", {hidden: true}, {onComplete: function(){
+     self.transitionOutComplete();
+   }})
    ////////////////
    // Scope API
    //
@@ -140,6 +149,7 @@ OverlayDirectiveCtrl = extendLayoutCtrl(LayoutContainerBase, LayoutDisplayBase, 
             parentScope.currentOverlay = null;
             overlayScope.$destroy();
             overlay = overlayScope = parentScope = null;
+            unWatchParent ();
           });
           // 
           // Init

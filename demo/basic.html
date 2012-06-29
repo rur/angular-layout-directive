@@ -40,6 +40,16 @@
             </div>
             <div ng-click="_overlay.hide()" class="back"></div>
          </div>
+          <div an-overlay with-name="overlayB" class="my-overlay">
+            <div an-overlay-panel class="my-panel">
+               <p>Hello Overlay</p>
+               <p>{{rootValue}}</p>
+               <p><input type="button" ng-click="_overlay.show('overlayA')" value="Show overlay A"></p>
+               <p><input type="button" ng-click="_overlay.hide()" value="Hide Overlay"></p>
+               <p><input type="button" ng-click="_parent.hide()" value="Hide Parent"></p>
+            </div>
+            <div ng-click="_overlay.hide()" class="back"></div>
+         </div>
       </div>
        <div an-overlay with-name="someBlockOverlay" class="my-overlay">
          <div an-overlay-panel class="my-panel">
@@ -89,7 +99,7 @@
 </div>
   <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
   <script src="http://code.angularjs.org/1.0.0rc10/angular-1.0.0rc10.min.js"></script>
-  <script src="http://fluid-src.appspot.com/angular-layout/1.0/fl_layout.min.js"></script>
+  <script src="../build/fl_layout.js"></script>
   <script src="js/app.js"></script>
   <script src="js/services.js"></script>
   <script src="js/controllers.js"></script>

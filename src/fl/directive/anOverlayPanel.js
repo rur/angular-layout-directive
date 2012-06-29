@@ -132,6 +132,7 @@ var anOverlayPanelDirective = ["$jQuery", function($jQuery){
          panel.$destroy()
          panel = null;
          ctrl.layoutScope.$destroy();
+         unWatchParent();
        })
        // init
        ctrl.init(scope._overlay);
