@@ -53,12 +53,13 @@
     * @param {option function} setlayout A function with the following signature funciton(children, scope){...}
     */
    this.layout = function(setlayout){
+     var _layout = layoutFn || self.defaultLayout();
      if(angular.isFunction(setlayout)){
        layoutFn = setlayout;
      } else if(arguments.length == 0){
        if(!triggered){
          layoutScope.$evalAsync(function(){
-                             layoutFn(children, layoutScope);
+                             _layout(children, layoutScope);
                              triggered = false;
                            });
          triggered = true;
@@ -88,6 +89,11 @@
    this.setLayoutScope = function(scope){
      __super.setLayoutScope && __super.setLayoutScope(scope);
      self.layoutScope = layoutScope = scope;
+     layoutScope.children = children;
+     layoutScope.childrenByName = childrenByName;
+     layoutScope.reflow = function(){
+       self.reflow();
+     }
    }
    
    /**
@@ -103,13 +109,12 @@
    /** 
     * Init function called at some point after instanciation, before use
     */
-   this.init = function(){ 
+   this.init = function(){  
      layoutScope.children = children;
      layoutScope.childrenByName = childrenByName;
      layoutScope.reflow = function(){
-         self.reflow();
+       self.reflow();
      }
-     self.layout(self.defaultLayout());
    }
    
    
@@ -321,7 +326,7 @@ function extendLayoutCtrl (base, child){
      base.apply(this, args.slice(0, base.$inject.length));
      inits.push(this.init||angular.noop);
      child.apply(this, args.slice(base.$inject.length));   
-     inits.push(this.init||angular.noop);
+     inits.unshift(this.init||angular.noop);
      this.init = function(){
        var args = Array.prototype.slice.call(arguments);
        angular.forEach(inits, function(initFn){
