@@ -112,6 +112,8 @@ Convenient directive for positioning a panel within an overlay.
 
 *Transition Service*
 --------------------
+**NB: This feature is due to be reconsidered completely**
+
 The transition service allows Angular directive controllers to bind its scope properties to transitions which get applied to its element. It does this in such a way so that the implementation of the value changes on the actual element are delegated to a TransitionSuite object. TransitionSuites are really easy to create and use (checkout the source).
 
 The transition api allows you to create an instance using a scope and an element, define bindings, setup transition states and trigger them.
