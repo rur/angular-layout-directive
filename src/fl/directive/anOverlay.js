@@ -18,7 +18,7 @@
    $element.css("overflow-x","hidden");
    $element.css("overflow-y","hidden");
    $element.css("position","absolute");
-   $element.css("z-index","100");
+   // $element.css("z-index","100");
    $element.css("top","0px");
    $element.css("left","0px");
    // transition

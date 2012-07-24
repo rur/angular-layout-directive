@@ -1,3 +1,7 @@
 a-layout, a-block, a-screen, an-overlay, an-overlay-panel{
   display: block;
 }
+
+an-overlay {
+  z-index: 100;
+}
