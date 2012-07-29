@@ -4,6 +4,7 @@ I'm using this readme is more of a spec-sheet so some information may be out of 
 *some links*
 --------------------
  - [Kitten Pound Demo](http://jsfiddle.net/rur_d/htwXa/)
+ - Interface that uses this library: [Fluid Website](http://www.fluid.ie)
  - [Compiled Source](http://fluid-src.appspot.com/angular-layout/1.0/fl_layout.js)
  - [Compiled Source Minified](http://fluid-src.appspot.com/angular-layout/1.0/fl_layout.min.js)
 
